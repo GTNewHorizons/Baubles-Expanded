@@ -13,7 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 
 public class ItemDebugger extends BaubleItemBase {
-    @SideOnly(Side.CLIENT)
+
     private IIcon[] icons;
 
 	public ItemDebugger() {
@@ -33,14 +33,12 @@ public class ItemDebugger extends BaubleItemBase {
 		}
 	}
 
-    @SideOnly(Side.CLIENT)
     @Override
     public IIcon getIconFromDamage(int meta) {
         return icons[meta >= icons.length ? 0 : meta];
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-	@SideOnly(Side.CLIENT)
 	@Override
 	public void getSubItems(Item item, CreativeTabs tab, List list) {
 		for(int i = 0; i < icons.length; i++) {
@@ -65,7 +63,6 @@ public class ItemDebugger extends BaubleItemBase {
 	  return null;
 	}
 
-	@SideOnly(Side.CLIENT)
 	public IIcon getBackgroundIconForSlotType(String type) {
 		if(type != null && BaubleExpandedSlots.isTypeRegistered(type)) {
 			return icons[BaubleExpandedSlots.getIndexOfTypeInRegisteredTypes(type)];

@@ -27,7 +27,6 @@ public abstract class BaubleItemBase extends Item implements IBaubleExpanded {
         return BaubleItemHelper.onBaubleRightClick(itemStackIn, worldIn, player);
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean debug) {
         BaubleItemHelper.addSlotInformation(tooltip, getBaubleTypes(stack));
