@@ -2,9 +2,6 @@ package baubles.common;
 
 import baubles.api.expanded.BaubleItemHelper;
 import baubles.api.expanded.IBaubleExpanded;
-import baubles.common.Baubles;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
@@ -14,6 +11,10 @@ import net.minecraft.world.World;
 
 import java.util.List;
 
+
+/**
+ * To be used to create standalone (i.e can't be used outside a bauble slot) bauble
+ */
 public abstract class BaubleItemBase extends Item implements IBaubleExpanded {
 
     public BaubleItemBase(){
