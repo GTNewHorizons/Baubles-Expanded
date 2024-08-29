@@ -116,7 +116,7 @@ public class ContainerPlayerExpanded extends Container {
                 			types = new String[] {BaubleExpandedSlots.getTypeFromBaubleType(((IBauble)item).getBaubleType(returnStack))};
                 		}
                 		for(String type : types) {
-                			if(type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - 4)) && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
+                			if((type.equals(BaubleExpandedSlots.universalType) || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - 4))) && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
                                 returnStack = null;
                 			}
                 		}
