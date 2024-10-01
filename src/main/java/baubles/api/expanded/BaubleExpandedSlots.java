@@ -198,7 +198,7 @@ public class BaubleExpandedSlots {
 	 * @return an array of slot indexes with the specified type.
 	 */
 	public static int[] getIndexesOfAssignedSlotsOfType(String type) {
-		int slotIndexes[] = new int[0];
+		int[] slotIndexes = new int[0];
 		if(isTypeRegistered(type)) {
 			for(int slotToCheck = 0; slotToCheck < slotLimit; slotToCheck++) {
 				if(assignedSlots[slotToCheck].equals(type)) {
@@ -295,18 +295,13 @@ public class BaubleExpandedSlots {
 		if(type == null) {
 			return invalidType;
 		}
-		switch(type) {
-		    case RING:
-		    	return ringType;
-		    case AMULET:
-		    	return amuletType;
-		    case BELT:
-		    	return beltType;
-            case UNIVERSAL:
-                return universalType;
-		    default:
-		    	return unknownType;
-		}
+        return switch (type) {
+            case RING -> ringType;
+            case AMULET -> amuletType;
+            case BELT -> beltType;
+            case UNIVERSAL -> universalType;
+            default -> unknownType;
+        };
 	}
 
 	/**
@@ -333,8 +328,8 @@ public class BaubleExpandedSlots {
 	}
 
 	private static int newSlotsRemaining;
-	private static String[] assignedSlots = new String[slotLimit];
-	private static ArrayList<String> registeredTypes = new ArrayList<String>();
+	private static final String[] assignedSlots = new String[slotLimit];
+	private static final ArrayList<String> registeredTypes = new ArrayList<String>();
 	static {
 		registeredTypes.add(unknownType);
 		registeredTypes.add(ringType);
