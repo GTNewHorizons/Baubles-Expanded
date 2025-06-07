@@ -141,17 +141,28 @@ public class ContainerPlayerExpanded extends Container {
             Item item = returnStack.getItem();
 
             if (slotIndex == 0) {
-                if (!this.mergeItemStack(originalStack, 9+4, 45+4, true)) {
+                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, true)) {
                     return null;
                 }
                 slot.onSlotChange(originalStack, returnStack);
-            } else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(((ItemArmor)item).armorType)).getHasStack()) {
-                int armorSlot = ((ItemArmor)item).armorType;
+            }
+            else if (slotIndex >= 1 && slotIndex < 5) {
+                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
+                    return null;
+                }
+            }
+            else if (slotIndex >= 5 && slotIndex < 9) {
+                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
+                    return null;
+                }
+            }
+            else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(5 + ((ItemArmor) item).armorType)).getHasStack()) {
+                int armorSlot = 5 + ((ItemArmor) item).armorType;
                 if(!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                     returnStack = null;
                 }
-            } else if(slotIndex >= 4 + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
-                for(int baubleSlot = 4; baubleSlot < 4 + visibleBaubleSlots; baubleSlot++) {
+            } else if(slotIndex >= 9 + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
+                for(int baubleSlot = 9; baubleSlot < 4 + visibleBaubleSlots; baubleSlot++) {
                     if(returnStack == null) {
                         break;
                     }
@@ -169,15 +180,15 @@ public class ContainerPlayerExpanded extends Container {
                 		}
                 	}
                 }
-            } else if(slotIndex >= 4 + visibleBaubleSlots && slotIndex < 31 + visibleBaubleSlots) {
-                if(!mergeItemStack(originalStack, 31 + visibleBaubleSlots, 40 + visibleBaubleSlots, false)) {
+            } else if(slotIndex >= 9 + visibleBaubleSlots && slotIndex < 36 + visibleBaubleSlots) {
+                if(!mergeItemStack(originalStack, 36 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
-            } else if(slotIndex >= 31 + visibleBaubleSlots && slotIndex < 40 + visibleBaubleSlots) {
-                if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 31 + visibleBaubleSlots, false)) {
+            } else if(slotIndex >= 36 + visibleBaubleSlots && slotIndex < 45 + visibleBaubleSlots) {
+                if(!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 36 + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
-            } else if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 40 + visibleBaubleSlots, false, slot)) {
+            } else if(!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false, slot)) {
                 returnStack = null;
             }
 
