@@ -1,5 +1,11 @@
 package baubles.client.gui;
 
+import codechicken.lib.vec.Rectangle4i;
+import codechicken.nei.VisiblityData;
+import codechicken.nei.api.INEIGuiHandler;
+import codechicken.nei.api.TaggedInventoryArea;
+import cpw.mods.fml.common.Optional;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
@@ -19,10 +25,13 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.Slot;
 import net.minecraft.util.ResourceLocation;
 
-public class GuiPlayerExpanded extends InventoryEffectRenderer {
+import java.util.Collections;
+import java.util.List;
+
+@Optional.Interface(iface = "codechicken.nei.api.INEIGuiHandler", modid = "NotEnoughItems")
+public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGuiHandler {
 
     public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
 
@@ -163,4 +172,38 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
         }
 	}
 
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public VisiblityData modifyVisiblity(GuiContainer gui, VisiblityData currentVisibility) {
+        return null;
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public Iterable<Integer> getItemSpawnSlots(GuiContainer gui, ItemStack item) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public List<TaggedInventoryArea> getInventoryAreas(GuiContainer gui) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public boolean handleDragNDrop(GuiContainer gui, int mousex, int mousey, ItemStack draggedStack, int button) {
+        return false;
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public boolean hideItemPanelSlot(GuiContainer gui, int x, int y, int w, int h) {
+        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
+        if ( gui instanceof GuiPlayerExpanded) {
+            return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight).intersects(new Rectangle4i(x, y, w, h)));
+        } else {
+            return false;
+        }
+    }
 }
