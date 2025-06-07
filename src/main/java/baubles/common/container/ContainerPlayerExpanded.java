@@ -132,7 +132,7 @@ public class ContainerPlayerExpanded extends Container {
     @Override
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
         ItemStack returnStack = null;
-        Slot slot = (Slot)inventorySlots.get(slotIndex);
+        Slot slot = (Slot) inventorySlots.get(slotIndex);
         final int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
 
         if(slot != null && slot.getHasStack()) {
@@ -140,7 +140,12 @@ public class ContainerPlayerExpanded extends Container {
             returnStack = originalStack.copy();
             Item item = returnStack.getItem();
 
-            if(item instanceof ItemArmor && !((Slot) inventorySlots.get(((ItemArmor)item).armorType)).getHasStack()) {
+            if (slotIndex == 0) {
+                if (!this.mergeItemStack(originalStack, 9+4, 45+4, true)) {
+                    return null;
+                }
+                slot.onSlotChange(originalStack, returnStack);
+            } else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(((ItemArmor)item).armorType)).getHasStack()) {
                 int armorSlot = ((ItemArmor)item).armorType;
                 if(!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                     returnStack = null;
