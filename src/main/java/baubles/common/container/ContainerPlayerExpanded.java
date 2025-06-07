@@ -10,18 +10,28 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.InventoryCraftResult;
+import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.inventory.Slot;
+import net.minecraft.inventory.SlotCrafting;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
 public class ContainerPlayerExpanded extends Container {
+
+    public InventoryCrafting craftMatrix = new InventoryCrafting(this, 2, 2);
+    public IInventory craftResult = new InventoryCraftResult();
     public InventoryBaubles baubles;
 
+    public boolean isLocalWorld;
     private final EntityPlayer thePlayer;
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean par2, EntityPlayer player) {
+        this.isLocalWorld = par2;
         this.thePlayer = player;
         baubles = new InventoryBaubles(player);
         baubles.setEventHandler(this);
@@ -29,8 +39,16 @@ public class ContainerPlayerExpanded extends Container {
             baubles.stackList = PlayerHandler.getPlayerBaubles(player).stackList;
         }
 
+        this.addSlotToContainer(new SlotCrafting(playerInv.player, this.craftMatrix, this.craftResult, 0, 144, 36));
+
         int i;
         int j;
+
+        for (i = 0; i < 2; ++i) {
+            for (j = 0; j < 2; ++j) {
+                this.addSlotToContainer(new Slot(this.craftMatrix, j + i * 2, 88 + j * 18, 26 + i * 18));
+            }
+        }
 
         //armor
         for (i = 0; i < 4; ++i) {
@@ -54,16 +72,16 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         final int slotOffset = 18;
-        final int slotStartX = 80;
-        final int slotStartY = 8;
 
         //bauble slots
         for(i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
         	String slotType = BaubleExpandedSlots.getSlotType(i);
         	if(BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                addSlotToContainer(new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4))));
+                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
         	}
         }
+
+        final int slotStartY = 8;
 
         //inventory slots
         for (i = 0; i < 3; ++i) {
@@ -77,6 +95,30 @@ public class ContainerPlayerExpanded extends Container {
             addSlotToContainer(new Slot(playerInv, i, slotStartY + i * slotOffset, 142));
         }
 
+        this.onCraftMatrixChanged(this.craftMatrix);
+
+    }
+
+    @Override
+    public void onCraftMatrixChanged(IInventory par1IInventory) {
+        this.craftResult.setInventorySlotContents(0, CraftingManager.getInstance().findMatchingRecipe(this.craftMatrix, this.thePlayer.worldObj));
+    }
+
+    @Override
+    public void onContainerClosed(EntityPlayer player) {
+        super.onContainerClosed(player);
+        for (int i = 0; i < 4; ++i) {
+            ItemStack itemstack = this.craftMatrix.getStackInSlotOnClosing(i);
+
+            if (itemstack != null) {
+                player.dropPlayerItemWithRandomChoice(itemstack, false);
+            }
+        }
+
+        this.craftResult.setInventorySlotContents(0, (ItemStack)null);
+        if (!player.worldObj.isRemote) {
+            PlayerHandler.setPlayerBaubles(player, baubles);
+        }
     }
 
     @Override
@@ -98,7 +140,7 @@ public class ContainerPlayerExpanded extends Container {
             returnStack = originalStack.copy();
             Item item = returnStack.getItem();
 
-            if(item instanceof ItemArmor && !((Slot)inventorySlots.get(((ItemArmor)item).armorType)).getHasStack()) {
+            if(item instanceof ItemArmor && !((Slot) inventorySlots.get(((ItemArmor)item).armorType)).getHasStack()) {
                 int armorSlot = ((ItemArmor)item).armorType;
                 if(!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                     returnStack = null;
@@ -108,7 +150,7 @@ public class ContainerPlayerExpanded extends Container {
                     if(returnStack == null) {
                         break;
                     }
-                	if(!((Slot)inventorySlots.get(baubleSlot)).getHasStack()) {
+                	if(!((Slot) inventorySlots.get(baubleSlot)).getHasStack()) {
                 		String[] types;
                 		if(item instanceof IBaubleExpanded) {
                 			types = ((IBaubleExpanded)item).getBaubleTypes(returnStack);

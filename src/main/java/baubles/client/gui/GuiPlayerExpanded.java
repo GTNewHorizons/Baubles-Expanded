@@ -82,15 +82,13 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
         mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
 
-
-
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         this.mc.getTextureManager().bindTexture(gui_background);
         this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
 
         final int slotOffset = 18;
         final int slotStartX = guiLeft - 26;
-        final int slotStartY = guiTop + 4;
+        final int slotStartY = 12;
 
         if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8 || !BaublesConfig.showUnusedSlots) {
             this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
@@ -105,7 +103,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
                 //Slot slot = (Slot)inventorySlots.inventorySlots.get(slotIndex + 4);
-                drawTexturedModalRect(slotStartX + (slotOffset * slotIndex), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
+                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
             }
         }
         drawPlayerModel(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
