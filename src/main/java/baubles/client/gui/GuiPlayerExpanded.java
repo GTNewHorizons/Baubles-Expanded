@@ -1,5 +1,8 @@
 package baubles.client.gui;
 
+import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
@@ -21,7 +24,9 @@ import net.minecraft.util.ResourceLocation;
 
 public class GuiPlayerExpanded extends InventoryEffectRenderer {
 
-	public static final ResourceLocation background = new ResourceLocation("baubles","textures/gui/bauble_inventory.png");
+    public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
+
+    private static final ResourceLocation creative_inventory_tabs = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
 
 	/**
      * x size of the inventory window in pixels. Defined as  float, passed as int.
@@ -40,7 +45,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
     /**
      * Called from the main game loop to update the screen.
      */
-    @Override 
+    @Override
     public void updateScreen() {
     	try {
 			((ContainerPlayerExpanded)inventorySlots).baubles.blockEvents = false;
@@ -67,21 +72,40 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer {
     }
 
     @Override
+    protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+        this.fontRendererObj.drawString(I18n.format("container.crafting"), 86, 16, 4210752);
+    }
+
+    @Override
     protected void drawGuiContainerBackgroundLayer(float p_146976_1_, int p_146976_2_, int p_146976_3_) {
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        mc.getTextureManager().bindTexture(background);
+        mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
 
+
+
+        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
+        this.mc.getTextureManager().bindTexture(gui_background);
+        this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
+
         final int slotOffset = 18;
-        final int slotStartX = guiLeft + 79;
-        final int slotStartY = guiTop + 7;
+        final int slotStartX = guiLeft - 26;
+        final int slotStartY = guiTop + 4;
+
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8 || !BaublesConfig.showUnusedSlots) {
+            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
+        } else {
+            this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
+            this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
+            //this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+        }
 
         //bauble slot backgrounds
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
-            if(BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
+            if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
                 //Slot slot = (Slot)inventorySlots.inventorySlots.get(slotIndex + 4);
-                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
+                drawTexturedModalRect(slotStartX + (slotOffset * slotIndex), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
             }
         }
         drawPlayerModel(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
