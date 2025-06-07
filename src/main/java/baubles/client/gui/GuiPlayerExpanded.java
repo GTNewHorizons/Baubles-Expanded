@@ -9,6 +9,7 @@ import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
@@ -75,7 +76,14 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
      */
     @Override
     public void drawScreen(int par1, int par2, float par3) {
+        //Check for potion Effects
+        if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
+            this.guiLeft = ((this.width - this.xSize) / 2) - 26;
+        }
         super.drawScreen(par1, par2, par3);
+        // And reset the canstant after
+        this.guiLeft = (this.width - this.xSize) / 2;
+        boolean flag = Mouse.isButtonDown(0);
         xSizeFloat = (float)par1;
         ySizeFloat = (float)par2;
     }
@@ -181,7 +189,7 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
     @Override
     @Optional.Method(modid = "NotEnoughItems")
     public Iterable<Integer> getItemSpawnSlots(GuiContainer gui, ItemStack item) {
-        return Collections.emptyList();
+        return null;
     }
 
     @Override
