@@ -3,8 +3,8 @@ package baubles.client.gui;
 import java.lang.reflect.Method;
 
 import baubles.common.network.PacketHandler;
-import baubles.common.network.PacketOpenBaublesInventory;
-import baubles.common.network.PacketOpenNormalInventory;
+import baubles.common.network.server.PacketOpenBaublesInventory;
+import baubles.common.network.server.PacketOpenNormalInventory;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

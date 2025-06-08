@@ -1,4 +1,4 @@
-package baubles.common.network;
+package baubles.common.network.client;
 
 import java.io.IOException;
 
@@ -15,13 +15,13 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.World;
 
 public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBauble, IMessage> {
-	
+
 	int slot;
 	int playerId;
 	ItemStack bauble=null;
-	
+
 	public PacketSyncBauble() {}
-	
+
 	public PacketSyncBauble(EntityPlayer player, int slot) {
 		this.slot = slot;
 		this.bauble = PlayerHandler.getPlayerBaubles(player).getStackInSlot(slot);
@@ -37,7 +37,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 	}
 
 	@Override
-	public void fromBytes(ByteBuf buffer) 
+	public void fromBytes(ByteBuf buffer)
 	{
 		slot = buffer.readByte();
 		playerId = buffer.readInt();

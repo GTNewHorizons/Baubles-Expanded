@@ -5,9 +5,14 @@ import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.BaublesConfig;
 import baubles.common.lib.PlayerHandler;
+import baubles.common.network.PacketHandler;
+import baubles.common.network.client.PacketScrollBaubleClient;
+import baubles.common.network.server.PacketScrollBaubleServer;
+import codechicken.nei.api.IInfiniteItemHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
@@ -21,17 +26,27 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
+import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 public class ContainerPlayerExpanded extends Container {
 
+    public SortedMap<Integer, String> baubleSlotMap = new TreeMap<>();
+    SortedMap<Integer, String> shownFilteredSlots = new TreeMap<>();
     public InventoryCrafting craftMatrix = new InventoryCrafting(this, 2, 2);
     public IInventory craftResult = new InventoryCraftResult();
     public InventoryBaubles baubles;
+
+    private int lastScrollIndex;
 
     public boolean isLocalWorld;
     private final EntityPlayer thePlayer;
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean par2, EntityPlayer player) {
-        this.isLocalWorld = par2;
+        this.isLocalWorld = player.worldObj.isRemote;
         this.thePlayer = player;
         baubles = new InventoryBaubles(player);
         baubles.setEventHandler(this);
@@ -72,15 +87,6 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         final int slotOffset = 18;
-
-        //bauble slots
-        for(i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
-        	String slotType = BaubleExpandedSlots.getSlotType(i);
-        	if(BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
-        	}
-        }
-
         final int slotStartY = 8;
 
         //inventory slots
@@ -96,7 +102,7 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         this.onCraftMatrixChanged(this.craftMatrix);
-
+        this.scrollToIndex(0);
     }
 
     @Override
@@ -121,6 +127,101 @@ public class ContainerPlayerExpanded extends Container {
         }
     }
 
+    public void scrollToIndex(int indexIn) {
+        String[] numberOfActiveSlots = BaubleExpandedSlots.getCurrentSlotAssignments();
+        final int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        //System.out.print(Arrays.toString(numberOfActiveSlots));
+
+        int slots = 0;
+        int yOffset = 12;
+        int index = 0;
+        this.inventorySlots.subList(45, this.inventorySlots.size()).clear();
+        this.inventoryItemStacks.subList(45, this.inventoryItemStacks.size()).clear();
+
+        for (int i = 0; i < numberOfActiveSlots.length && i < BaubleExpandedSlots.slotLimit; i++) {
+            if (!numberOfActiveSlots[i].equals(BaubleExpandedSlots.unknownType)) {
+                baubleSlotMap.put(i, numberOfActiveSlots[i]);
+                //System.out.println(baubleSlotMap);
+            }
+        }
+        //System.out.println(baubleSlotMap);
+        for (int identifier : baubleSlotMap.keySet()) {
+            //System.out.println(identifier + " " + baubleSlotMap.get(identifier));
+
+            String shownSlot = baubleSlotMap.get(identifier);
+
+            //System.out.println(identifier + " " + baubleSlotMap.get(identifier));
+        for (int i = 0; i + 1 < shownSlot.length() && slots < 8; i++) {
+            String slotType = BaubleExpandedSlots.getSlotType(i);
+            //System.out.println(slotType + i);
+            if (index >= indexIn) {
+                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, yOffset));
+                yOffset += 18;
+                slots++;
+                //System.out.println(shownSlot + " " + identifier);
+            }
+            index++;
+        }
+        }
+        if (!this.isLocalWorld) {
+            PacketHandler.INSTANCE.sendTo(new PacketScrollBaubleServer(this.windowId, indexIn), (EntityPlayerMP) this.thePlayer);
+        }
+        lastScrollIndex = indexIn;
+    }
+
+    public void scrollTo(float offset) {
+
+        if (!canScroll()) return;
+
+        if (offset < 0) offset = 0;
+        if (offset > 1) offset = 1;
+
+
+        int k = Math.min (baubleSlotMap.size(), 8);
+
+        int j = (int)((double)(offset * (float) k) + 0.5D);
+
+        if (j < 0) {
+            j = 0;
+        }
+
+        if (j == this.lastScrollIndex) {
+            return;
+        }
+
+        shownFilteredSlots = baubleSlotMap.subMap(this.lastScrollIndex * (int) offset, (int)(offset * (float) k));
+        System.out.println(lastScrollIndex + " " + offset + " " + k);
+        System.out.println(shownFilteredSlots);
+
+        if (this.isLocalWorld) {
+            PacketHandler.INSTANCE.sendToServer(new PacketScrollBaubleClient(this.windowId, j));
+        }
+        //baubleSlotMap.subMap( , (int)(offset * (float) k));
+        /*
+        for ()
+         this.baubleSlotMap.subMap();
+        int k = (baubleSlotMap.get());
+        int j = (int)((double)(pos * (float) k) + 0.5D);
+
+        if (j < 0) {
+            j = 0;
+        }
+
+        if (j == this.lastScrollIndex) {
+            return;
+        }
+         */
+
+
+    }
+
+    public boolean canScroll() {
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public boolean canInteractWith(EntityPlayer player) {
         return true;
@@ -129,6 +230,7 @@ public class ContainerPlayerExpanded extends Container {
     /**
      * Called when a player shift-clicks on a slot. You must override this or you will crash when someone does that.
      */
+    @Nonnull
     @Override
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
         ItemStack returnStack = null;
@@ -209,9 +311,9 @@ public class ContainerPlayerExpanded extends Container {
     }
 
     private void unequipBauble(ItemStack stack) {
-//        if (stack.getItem() instanceof IBauble) {
-//            ((IBauble)stack.getItem()).onUnequipped(stack, thePlayer);
-//        }
+        //if (stack.getItem() instanceof IBauble) {
+        //    ((IBauble)stack.getItem()).onUnequipped(stack, thePlayer);
+        //}
     }
 
     @Override

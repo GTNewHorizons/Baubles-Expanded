@@ -9,11 +9,15 @@ import cpw.mods.fml.common.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.gui.inventory.GuiContainerCreative;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.MathHelper;
+
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
@@ -52,6 +56,15 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     public boolean showActivePotionEffects;
 
+    private boolean widthTooNarrow;
+
+    /** Amount scrolled in Creative mode inventory (0 = top, 1 = bottom) */
+    private float currentScroll;
+    /** True if the scrollbar is being dragged */
+    private boolean isScrolling;
+    /** True if the left mouse button was held down last time drawScreen was called. */
+    private boolean wasClicking;
+
     public GuiPlayerExpanded(EntityPlayer player) {
         super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
         allowUserInput = true;
@@ -63,7 +76,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Override
     public void updateScreen() {
     	try {
-			((ContainerPlayerExpanded)inventorySlots).baubles.blockEvents = false;
+			((ContainerPlayerExpanded) inventorySlots).baubles.blockEvents = false;
 		} catch (Exception e) {}
     }
 
@@ -74,6 +87,8 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     public void initGui() {
         buttonList.clear();
         super.initGui();
+
+        this.widthTooNarrow = this.width < 379;
 
         if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
             this.showActivePotionEffects = true;
@@ -86,9 +101,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         super.drawScreen(mouseX, mouseY, partialTicks);
-        boolean flag = Mouse.isButtonDown(0);
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
+
+        handleScrollbar(mouseX, mouseY);
     }
 
     @Override
@@ -130,9 +146,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         //bauble slot backgrounds
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
+            int slotPage = 1;
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
                 //Slot slot = (Slot)inventorySlots.inventorySlots.get(slotIndex + 4);
-                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
+
+
+                if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8 && slotPage == 1) {
+                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
+                }
+                if (BaubleExpandedSlots.slotsCurrentlyUsed() >= 9 && BaubleExpandedSlots.slotsCurrentlyUsed() >= 16 && slotPage == 2) {
+                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
+                }
             }
         }
     }
@@ -178,6 +202,56 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 String s = Potion.getDurationString(potioneffect);
                 this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
             }
+        }
+    }
+
+    private boolean needsScrollBars() {
+        return ((ContainerPlayerExpanded) this.inventorySlots).canScroll();
+    }
+
+    private void handleScrollbar(int mouseX, int mouseY) {
+        boolean flag = Mouse.isButtonDown(0);
+        int k = this.guiLeft;
+        int l = this.guiTop;
+        int i1 = k - 34;
+        int j1 = l + 12;
+        int k1 = i1 + 14;
+        int l1 = j1 + 139;
+
+        if (!this.wasClicking && flag && mouseX >= i1 && mouseY >= j1 && mouseX < k1 && mouseY < l1) {
+            this.isScrolling = this.needsScrollBars();
+        }
+
+        if (!flag) {
+            this.isScrolling = false;
+        }
+
+        this.wasClicking = flag;
+
+        if (this.isScrolling) {
+            this.currentScroll = ((float)(mouseY - j1) - 7.5F) / ((float)(l1 - j1) - 15.0F);
+
+            if (this.currentScroll < 0.0F) {
+                this.currentScroll = 0.0F;
+            }
+
+            if (this.currentScroll > 1.0F) {
+                this.currentScroll = 1.0F;
+            }
+
+            ((ContainerPlayerExpanded) this.inventorySlots).scrollTo(this.currentScroll);
+        }
+    }
+
+    @Override
+    public void handleMouseInput() {
+        super.handleMouseInput();
+        int wheel = Mouse.getEventDWheel();
+        if (this.needsScrollBars()) {
+            int i = ((ContainerPlayerExpanded)this.inventorySlots).baubleSlotMap.size();
+            this.currentScroll = (float)((double)this.currentScroll - wheel / (double) i);
+            this.currentScroll = MathHelper.clamp_float(this.currentScroll, 0.0F, 1.0F);
+            ((ContainerPlayerExpanded)this.inventorySlots).scrollTo(this.currentScroll);
         }
     }
 

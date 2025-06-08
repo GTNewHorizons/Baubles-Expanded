@@ -3,7 +3,7 @@ package baubles.common.event;
 import org.lwjgl.input.Keyboard;
 
 import baubles.common.network.PacketHandler;
-import baubles.common.network.PacketOpenBaublesInventory;
+import baubles.common.network.server.PacketOpenBaublesInventory;
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -15,10 +15,10 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.StatCollector;
 
 public class KeyHandler {
-	
-	public KeyBinding key = new KeyBinding(StatCollector.translateToLocal("keybind.baublesinventory"), 
+
+	public KeyBinding key = new KeyBinding(StatCollector.translateToLocal("keybind.baublesinventory"),
 			Keyboard.KEY_B, "key.categories.inventory");
-	
+
 	public KeyHandler() {
 		 ClientRegistry.registerKeyBinding(key);
 	}

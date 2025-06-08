@@ -1,6 +1,11 @@
 package baubles.common.network;
 
 import baubles.common.Baubles;
+import baubles.common.network.client.PacketScrollBaubleClient;
+import baubles.common.network.client.PacketSyncBauble;
+import baubles.common.network.server.PacketOpenBaublesInventory;
+import baubles.common.network.server.PacketOpenNormalInventory;
+import baubles.common.network.server.PacketScrollBaubleServer;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
@@ -14,7 +19,9 @@ public class PacketHandler
         INSTANCE.registerMessage(PacketOpenBaublesInventory.class, PacketOpenBaublesInventory.class, 0, Side.SERVER);
         INSTANCE.registerMessage(PacketOpenNormalInventory.class, PacketOpenNormalInventory.class, 1, Side.SERVER);
         INSTANCE.registerMessage(PacketSyncBauble.class, PacketSyncBauble.class, 2, Side.CLIENT);
+        INSTANCE.registerMessage(PacketScrollBaubleClient.class, PacketScrollBaubleClient.class, 3, Side.CLIENT);
+        INSTANCE.registerMessage(PacketScrollBaubleServer.class, PacketScrollBaubleServer.class, 4, Side.SERVER);
     }
-    
-    
+
+
 }
