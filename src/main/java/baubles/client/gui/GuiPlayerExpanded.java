@@ -119,12 +119,12 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         final int slotStartX = guiLeft - 26;
         final int slotStartY = 12;
 
-        if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8 || !BaublesConfig.showUnusedSlots) {
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
             this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
         } else {
             this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
             this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
-            //this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+            this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
         }
 
         //bauble slot backgrounds
@@ -138,7 +138,11 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     }
 
     private void drawPotionEffects() {
-        int positionHorizontal = guiLeft - 26 - 124;
+        int slotIndent = 26;
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
+            slotIndent = 42;
+        }
+        int positionHorizontal = guiLeft - slotIndent - 124;
         int positionVertical = guiTop;
         Collection<PotionEffect> potionCollection = this.mc.thePlayer.getActivePotionEffects();
 
@@ -224,10 +228,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     public boolean hideItemPanelSlot(GuiContainer gui, int slotX, int slotY, int slotW, int slotH) {
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         if (gui instanceof GuiPlayerExpanded) {
-            if (NEIClientConfig.ignorePotionOverlap()) {
-                return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+
+            int slotIndent = 26;
+            int slotWidth = 18;
+            if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
+                slotIndent = 42;
+                slotWidth = 36;
             }
-            int x = this.guiLeft - 124 - 26;
+            if (NEIClientConfig.ignorePotionOverlap()) {
+                return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+            }
+            int x = this.guiLeft - 124 - slotIndent;
             int y = this.guiTop;
             Minecraft minecraft = gui.mc;
             if (minecraft == null) {
@@ -239,14 +250,14 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             }
             Collection<PotionEffect> activePotionEffects = player.getActivePotionEffects();
             if (activePotionEffects.isEmpty()) {
-                return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+                return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
             }
             int height = 33;
             if (activePotionEffects.size() > 5) {
                 height = 132 / (activePotionEffects.size() - 1);
             }
             Rectangle4i slotRect = new Rectangle4i(slotX, slotY, slotW, slotH);
-            Rectangle4i baubleSlots = new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4);
+            Rectangle4i baubleSlots = new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4);
             for (PotionEffect potioneffect : activePotionEffects) {
                 Rectangle4i box = new Rectangle4i(x, y, 140, 32);
                 box.include(baubleSlots);
