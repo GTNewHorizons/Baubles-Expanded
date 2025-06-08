@@ -16,7 +16,6 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
 
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.common.Baubles;
@@ -25,10 +24,6 @@ import baubles.common.container.ContainerPlayerExpanded;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.achievement.GuiAchievements;
 import net.minecraft.client.gui.achievement.GuiStats;
-import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
@@ -113,7 +108,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         //Player Model
         func_147046_a(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
     }
-    
+
     private void drawBaubleSlots() {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
