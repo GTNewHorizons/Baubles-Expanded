@@ -90,11 +90,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
      */
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        if (showActivePotionEffects) {
-            drawPotionEffects();
-        }
         super.drawScreen(mouseX, mouseY, partialTicks);
-
         boolean flag = Mouse.isButtonDown(0);
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
@@ -109,6 +105,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     protected void drawGuiContainerBackgroundLayer(float p_146976_1_, int p_146976_2_, int p_146976_3_) {
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
+        this.drawBaubleSlots();
+        if (showActivePotionEffects) {
+            drawPotionEffects();
+        }
+
+        //Player Model
+        func_147046_a(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
+    }
+    
+    private void drawBaubleSlots() {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         this.mc.getTextureManager().bindTexture(gui_background);
@@ -134,7 +140,6 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
             }
         }
-        func_147046_a(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
     }
 
     private void drawPotionEffects() {
