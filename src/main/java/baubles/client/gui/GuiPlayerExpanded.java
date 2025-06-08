@@ -1,14 +1,19 @@
 package baubles.client.gui;
 
 import codechicken.lib.vec.Rectangle4i;
+import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
 import codechicken.nei.api.INEIGuiHandler;
 import codechicken.nei.api.TaggedInventoryArea;
 import cpw.mods.fml.common.Optional;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.Potion;
+import net.minecraft.potion.PotionEffect;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -20,7 +25,6 @@ import baubles.common.container.ContainerPlayerExpanded;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.achievement.GuiAchievements;
 import net.minecraft.client.gui.achievement.GuiStats;
-import net.minecraft.client.renderer.InventoryEffectRenderer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -28,11 +32,15 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
+import static net.minecraft.client.gui.inventory.GuiInventory.func_147046_a;
+
 @Optional.Interface(iface = "codechicken.nei.api.INEIGuiHandler", modid = "NotEnoughItems")
-public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGuiHandler {
+public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
 
@@ -46,6 +54,8 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
      * y size of the inventory window in pixels. Defined as  float, passed as int.
      */
     private float ySizeFloat;
+
+    public boolean showActivePotionEffects;
 
     public GuiPlayerExpanded(EntityPlayer player) {
         super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
@@ -69,23 +79,25 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
     public void initGui() {
         buttonList.clear();
         super.initGui();
+
+        if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
+            this.showActivePotionEffects = true;
+        }
     }
 
     /**
      * Draws the screen and all the components in it.
      */
     @Override
-    public void drawScreen(int par1, int par2, float par3) {
-        //Check for potion Effects
-        if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
-            this.guiLeft = ((this.width - this.xSize) / 2) - 26;
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (showActivePotionEffects) {
+            drawPotionEffects();
         }
-        super.drawScreen(par1, par2, par3);
-        // And reset the canstant after
-        this.guiLeft = (this.width - this.xSize) / 2;
+        super.drawScreen(mouseX, mouseY, partialTicks);
+
         boolean flag = Mouse.isButtonDown(0);
-        xSizeFloat = (float)par1;
-        ySizeFloat = (float)par2;
+        xSizeFloat = (float) mouseX;
+        ySizeFloat = (float) mouseY;
     }
 
     @Override
@@ -98,7 +110,6 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
-
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         this.mc.getTextureManager().bindTexture(gui_background);
         this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
@@ -123,43 +134,47 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
                 drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
             }
         }
-        drawPlayerModel(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
+        func_147046_a(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
     }
 
-    public static void drawPlayerModel(int x, int y, int scale, float yaw, float pitch, EntityLivingBase playerdrawn) {
-        GL11.glEnable(GL11.GL_COLOR_MATERIAL);
-        GL11.glPushMatrix();
-        GL11.glTranslatef((float)x, (float)y, 50.0F);
-        GL11.glScalef((float)(-scale), (float)scale, (float)scale);
-        GL11.glRotatef(180.0F, 0.0F, 0.0F, 1.0F);
-        float f2 = playerdrawn.renderYawOffset;
-        float f3 = playerdrawn.rotationYaw;
-        float f4 = playerdrawn.rotationPitch;
-        float f5 = playerdrawn.prevRotationYawHead;
-        float f6 = playerdrawn.rotationYawHead;
-        GL11.glRotatef(135.0F, 0.0F, 1.0F, 0.0F);
-        RenderHelper.enableStandardItemLighting();
-        GL11.glRotatef(-135.0F, 0.0F, 1.0F, 0.0F);
-        GL11.glRotatef(-((float)Math.atan((double)(pitch / 40.0F))) * 20.0F, 1.0F, 0.0F, 0.0F);
-        playerdrawn.renderYawOffset = (float)Math.atan((double)(yaw / 40.0F)) * 20.0F;
-        playerdrawn.rotationYaw = (float)Math.atan((double)(yaw / 40.0F)) * 40.0F;
-        playerdrawn.rotationPitch = -((float)Math.atan((double)(pitch / 40.0F))) * 20.0F;
-        playerdrawn.rotationYawHead = playerdrawn.rotationYaw;
-        playerdrawn.prevRotationYawHead = playerdrawn.rotationYaw;
-        GL11.glTranslatef(0.0F, playerdrawn.yOffset, 0.0F);
-        RenderManager.instance.playerViewY = 180.0F;
-        RenderManager.instance.renderEntityWithPosYaw(playerdrawn, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F);
-        playerdrawn.renderYawOffset = f2;
-        playerdrawn.rotationYaw = f3;
-        playerdrawn.rotationPitch = f4;
-        playerdrawn.prevRotationYawHead = f5;
-        playerdrawn.rotationYawHead = f6;
-        GL11.glPopMatrix();
-        RenderHelper.disableStandardItemLighting();
-        GL11.glDisable(GL12.GL_RESCALE_NORMAL);
-        OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+    private void drawPotionEffects() {
+        int positionHorizontal = guiLeft - 26 - 124;
+        int positionVertical = guiTop;
+        Collection<PotionEffect> potionCollection = this.mc.thePlayer.getActivePotionEffects();
+
+        if (!potionCollection.isEmpty()) {
+            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            int maxNumber = 33;
+
+            if (potionCollection.size() > 5) {
+                maxNumber = 132 / (potionCollection.size() - 1);
+            }
+
+            for (Iterator iterator = this.mc.thePlayer.getActivePotionEffects().iterator(); iterator.hasNext(); positionVertical += maxNumber) {
+                PotionEffect potioneffect = (PotionEffect)iterator.next();
+                Potion potion = Potion.potionTypes[potioneffect.getPotionID()];
+                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+                this.mc.getTextureManager().bindTexture(field_147001_a);
+                this.drawTexturedModalRect(positionHorizontal, positionVertical, 0, 166, 140, 32);
+
+                if (potion.hasStatusIcon()) {
+                    int potionIconIndex = potion.getStatusIconIndex();
+                    this.drawTexturedModalRect(positionHorizontal + 6, positionVertical + 7, potionIconIndex % 8 * 18, 198 + potionIconIndex / 8 * 18, 18, 18);
+                }
+
+                potion.renderInventoryEffect(positionHorizontal, positionVertical, potioneffect, mc);
+                if (!potion.shouldRenderInvText(potioneffect)) continue;
+                String potionName = I18n.format(potion.getName());
+
+                if (potioneffect.getAmplifier() >= 1) {
+                    potionName = potionName + " " + I18n.format("enchantment.level." + potioneffect.getAmplifier());
+                }
+                this.fontRendererObj.drawStringWithShadow(potionName, positionHorizontal + 10 + 18, positionVertical + 6, 16777215);
+                String s = Potion.getDurationString(potioneffect);
+                this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
+            }
+        }
     }
 
     @Override
@@ -206,12 +221,39 @@ public class GuiPlayerExpanded extends InventoryEffectRenderer implements INEIGu
 
     @Override
     @Optional.Method(modid = "NotEnoughItems")
-    public boolean hideItemPanelSlot(GuiContainer gui, int x, int y, int w, int h) {
+    public boolean hideItemPanelSlot(GuiContainer gui, int slotX, int slotY, int slotW, int slotH) {
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
-        if ( gui instanceof GuiPlayerExpanded) {
-            return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight).intersects(new Rectangle4i(x, y, w, h)));
-        } else {
-            return false;
+        if (gui instanceof GuiPlayerExpanded) {
+            if (NEIClientConfig.ignorePotionOverlap()) {
+                return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+            }
+            int x = this.guiLeft - 124 - 26;
+            int y = this.guiTop;
+            Minecraft minecraft = gui.mc;
+            if (minecraft == null) {
+                return false;
+            }
+            EntityPlayerSP player = minecraft.thePlayer;
+            if (player == null) {
+                return false;
+            }
+            Collection<PotionEffect> activePotionEffects = player.getActivePotionEffects();
+            if (activePotionEffects.isEmpty()) {
+                return (new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+            }
+            int height = 33;
+            if (activePotionEffects.size() > 5) {
+                height = 132 / (activePotionEffects.size() - 1);
+            }
+            Rectangle4i slotRect = new Rectangle4i(slotX, slotY, slotW, slotH);
+            Rectangle4i baubleSlots = new Rectangle4i( guiLeft - 26, guiTop + 4, 18, upperHeight + 4);
+            for (PotionEffect potioneffect : activePotionEffects) {
+                Rectangle4i box = new Rectangle4i(x, y, 140, 32);
+                box.include(baubleSlots);
+                if (box.intersects(slotRect)) return true;
+                y += height;
+            }
         }
+        return false;
     }
 }
