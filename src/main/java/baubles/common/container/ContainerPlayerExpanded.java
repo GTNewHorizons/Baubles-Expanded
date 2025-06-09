@@ -5,14 +5,9 @@ import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.BaublesConfig;
 import baubles.common.lib.PlayerHandler;
-import baubles.common.network.PacketHandler;
-import baubles.common.network.client.PacketScrollBaubleClient;
-import baubles.common.network.server.PacketScrollBaubleServer;
-import codechicken.nei.api.IInfiniteItemHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
@@ -27,15 +22,12 @@ import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
 import javax.annotation.Nonnull;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 public class ContainerPlayerExpanded extends Container {
 
     public SortedMap<Integer, String> baubleSlotMap = new TreeMap<>();
-    SortedMap<Integer, String> shownFilteredSlots = new TreeMap<>();
     public InventoryCrafting craftMatrix = new InventoryCrafting(this, 2, 2);
     public IInventory craftResult = new InventoryCraftResult();
     public InventoryBaubles baubles;
@@ -87,22 +79,31 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         final int slotOffset = 18;
+
+        //Bauble Slots
+        for(i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
+            String slotType = BaubleExpandedSlots.getSlotType(i);
+            if(BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
+                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
+            }
+        }
+
         final int slotStartY = 8;
 
         //inventory slots
         for (i = 0; i < 3; ++i) {
             for (j = 0; j < 9; ++j) {
-                addSlotToContainer(new Slot(playerInv, j + (i + 1) * 9, slotStartY + j * slotOffset, 84 + i * 18));
+                this.addSlotToContainer(new Slot(playerInv, j + (i + 1) * 9, slotStartY + j * slotOffset, 84 + i * 18));
             }
         }
 
         //hotbar slots
         for (i = 0; i < 9; ++i) {
-            addSlotToContainer(new Slot(playerInv, i, slotStartY + i * slotOffset, 142));
+            this.addSlotToContainer(new Slot(playerInv, i, slotStartY + i * slotOffset, 142));
         }
 
         this.onCraftMatrixChanged(this.craftMatrix);
-        this.scrollToIndex(0);
+        this.scrollTo(0);
     }
 
     @Override
@@ -127,92 +128,34 @@ public class ContainerPlayerExpanded extends Container {
         }
     }
 
-    public void scrollToIndex(int indexIn) {
-        String[] numberOfActiveSlots = BaubleExpandedSlots.getCurrentSlotAssignments();
-        final int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
-        //System.out.print(Arrays.toString(numberOfActiveSlots));
-
-        int slots = 0;
-        int yOffset = 12;
-        int index = 0;
-        this.inventorySlots.subList(45, this.inventorySlots.size()).clear();
-        this.inventoryItemStacks.subList(45, this.inventoryItemStacks.size()).clear();
-
-        for (int i = 0; i < numberOfActiveSlots.length && i < BaubleExpandedSlots.slotLimit; i++) {
-            if (!numberOfActiveSlots[i].equals(BaubleExpandedSlots.unknownType)) {
-                baubleSlotMap.put(i, numberOfActiveSlots[i]);
-                //System.out.println(baubleSlotMap);
-            }
-        }
-        //System.out.println(baubleSlotMap);
-        for (int identifier : baubleSlotMap.keySet()) {
-            //System.out.println(identifier + " " + baubleSlotMap.get(identifier));
-
-            String shownSlot = baubleSlotMap.get(identifier);
-
-            //System.out.println(identifier + " " + baubleSlotMap.get(identifier));
-        for (int i = 0; i + 1 < shownSlot.length() && slots < 8; i++) {
-            String slotType = BaubleExpandedSlots.getSlotType(i);
-            //System.out.println(slotType + i);
-            if (index >= indexIn) {
-                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, yOffset));
-                yOffset += 18;
-                slots++;
-                //System.out.println(shownSlot + " " + identifier);
-            }
-            index++;
-        }
-        }
-        if (!this.isLocalWorld) {
-            PacketHandler.INSTANCE.sendTo(new PacketScrollBaubleServer(this.windowId, indexIn), (EntityPlayerMP) this.thePlayer);
-        }
-        lastScrollIndex = indexIn;
-    }
-
     public void scrollTo(float offset) {
 
         if (!canScroll()) return;
+        final int activeBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
 
         if (offset < 0) offset = 0;
         if (offset > 1) offset = 1;
 
+        int shownslots = 8;
+        int slotOffset = (int) ((double) (offset * (float) (activeBaubleSlots - shownslots)) + 0.5F);
 
-        int k = Math.min (baubleSlotMap.size(), 8);
 
-        int j = (int)((double)(offset * (float) k) + 0.5D);
-
-        if (j < 0) {
-            j = 0;
+        if (slotOffset < 0) {
+            slotOffset = 0;
         }
 
-        if (j == this.lastScrollIndex) {
-            return;
+        for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotLimit; i++) {
+            //TODO: Find a way to not use a magic number to get to the correct ID range for the Slot editing.
+            Slot slot = (Slot) this.inventorySlots.get(9 + i);
+            int displayIndex = i;
+            if (displayIndex >= 0 && displayIndex < activeBaubleSlots) {
+                slot.yDisplayPosition = (12 - (slotOffset * 18) + (displayIndex) * 18);
+                if (slot.yDisplayPosition < 12 || slot.yDisplayPosition > 8 * 18) {
+                    //Hide the rest of the slots!
+                    slot.yDisplayPosition = -2000;
+                }
+            }
         }
-
-        shownFilteredSlots = baubleSlotMap.subMap(this.lastScrollIndex * (int) offset, (int)(offset * (float) k));
-        System.out.println(lastScrollIndex + " " + offset + " " + k);
-        System.out.println(shownFilteredSlots);
-
-        if (this.isLocalWorld) {
-            PacketHandler.INSTANCE.sendToServer(new PacketScrollBaubleClient(this.windowId, j));
-        }
-        //baubleSlotMap.subMap( , (int)(offset * (float) k));
-        /*
-        for ()
-         this.baubleSlotMap.subMap();
-        int k = (baubleSlotMap.get());
-        int j = (int)((double)(pos * (float) k) + 0.5D);
-
-        if (j < 0) {
-            j = 0;
-        }
-
-        if (j == this.lastScrollIndex) {
-            return;
-        }
-         */
-
-
     }
 
     public boolean canScroll() {

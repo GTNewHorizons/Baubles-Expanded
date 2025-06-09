@@ -56,8 +56,6 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     public boolean showActivePotionEffects;
 
-    private boolean widthTooNarrow;
-
     /** Amount scrolled in Creative mode inventory (0 = top, 1 = bottom) */
     private float currentScroll;
     /** True if the scrollbar is being dragged */
@@ -87,8 +85,6 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     public void initGui() {
         buttonList.clear();
         super.initGui();
-
-        this.widthTooNarrow = this.width < 379;
 
         if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
             this.showActivePotionEffects = true;
@@ -129,15 +125,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         this.mc.getTextureManager().bindTexture(gui_background);
-        this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
 
         final int slotOffset = 18;
         final int slotStartX = guiLeft - 26;
         final int slotStartY = 12;
 
         if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
+            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
             this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
         } else {
+            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
             this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
             this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
             this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
@@ -248,7 +245,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
         if (this.needsScrollBars()) {
-            int i = ((ContainerPlayerExpanded)this.inventorySlots).baubleSlotMap.size();
+            int i = BaubleExpandedSlots.slotsCurrentlyUsed();
             this.currentScroll = (float)((double)this.currentScroll - wheel / (double) i);
             this.currentScroll = MathHelper.clamp_float(this.currentScroll, 0.0F, 1.0F);
             ((ContainerPlayerExpanded)this.inventorySlots).scrollTo(this.currentScroll);
