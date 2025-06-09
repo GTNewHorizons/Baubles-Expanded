@@ -10,6 +10,9 @@ public class BaublesConfig {
 	public static boolean hideDebugItem = true;
 
     public static int[] soulBoundEnchantments = new int[] {};
+
+    public static boolean useOldGuiButton = false;
+    public static boolean useOldGuiRendering = false;
     public static boolean showUnusedSlots = false;
     public static boolean manualSlotSelection = false;
 
@@ -39,6 +42,8 @@ public class BaublesConfig {
         ).getIntList();
 
         //categoryMenu
+        useOldGuiButton = config.getBoolean("useOldGGuiButton", categoryMenu, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
+        useOldGuiRendering = config.getBoolean("useOldRendering", categoryMenu, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");
         manualSlotSelection = config.getBoolean("manualSlotSelection", categoryMenu, manualSlotSelection,
             "Manually override slot assignments.\n!Bauble slot types must be configured manually with this option enabled!\n"

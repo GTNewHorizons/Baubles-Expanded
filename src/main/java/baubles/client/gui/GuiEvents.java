@@ -12,6 +12,8 @@ import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
 import net.minecraftforge.client.event.GuiScreenEvent;
 
+import static baubles.common.BaublesConfig.useOldGuiButton;
+
 public class GuiEvents {
 
 	@SideOnly(value = Side.CLIENT)
@@ -30,8 +32,13 @@ public class GuiEvents {
 	        	guiLeft = 160 + (event.gui.width - xSize - 200) / 2;
 	        }
 
-			event.buttonList.add(new GuiBaublesButton(55, guiLeft + 26, guiTop + 9, 10, 10,
-					I18n.format((event.gui instanceof GuiInventory)?"button.baubles":"button.normal", new Object[0])));
+            if (useOldGuiButton) {
+                event.buttonList.add(new GuiBaublesButton(55, guiLeft + 66, guiTop + 9, 10, 10,
+                    I18n.format((event.gui instanceof GuiInventory)?"button.baubles":"button.normal", new Object[0])));
+            } else {
+                event.buttonList.add(new GuiBaublesButton(55, guiLeft + 26, guiTop + 9, 10, 10,
+                    I18n.format((event.gui instanceof GuiInventory) ? "button.baubles" : "button.normal", new Object[0])));
+            }
 		}
 
 	}

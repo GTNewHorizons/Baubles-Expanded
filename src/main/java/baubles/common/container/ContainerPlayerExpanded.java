@@ -23,19 +23,17 @@ import net.minecraft.util.IIcon;
 
 import javax.annotation.Nonnull;
 
+import static baubles.common.BaublesConfig.useOldGuiRendering;
+
 public class ContainerPlayerExpanded extends Container {
 
     public InventoryCrafting craftMatrix = new InventoryCrafting(this, 2, 2);
     public IInventory craftResult = new InventoryCraftResult();
     public InventoryBaubles baubles;
 
-    private int lastScrollIndex;
-
-    public boolean isLocalWorld;
     private final EntityPlayer thePlayer;
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean par2, EntityPlayer player) {
-        this.isLocalWorld = player.worldObj.isRemote;
         this.thePlayer = player;
         baubles = new InventoryBaubles(player);
         baubles.setEventHandler(this);
@@ -43,14 +41,16 @@ public class ContainerPlayerExpanded extends Container {
             baubles.stackList = PlayerHandler.getPlayerBaubles(player).stackList;
         }
 
-        this.addSlotToContainer(new SlotCrafting(playerInv.player, this.craftMatrix, this.craftResult, 0, 144, 36));
-
         int i;
         int j;
 
-        for (i = 0; i < 2; ++i) {
-            for (j = 0; j < 2; ++j) {
-                this.addSlotToContainer(new Slot(this.craftMatrix, j + i * 2, 88 + j * 18, 26 + i * 18));
+        if (!useOldGuiRendering) {
+            this.addSlotToContainer(new SlotCrafting(playerInv.player, this.craftMatrix, this.craftResult, 0, 144, 36));
+
+            for (i = 0; i < 2; ++i) {
+                for (j = 0; j < 2; ++j) {
+                    this.addSlotToContainer(new Slot(this.craftMatrix, j + i * 2, 88 + j * 18, 26 + i * 18));
+                }
             }
         }
 
@@ -76,16 +76,20 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         final int slotOffset = 18;
+        final int slotStartX = 80;
+        final int slotStartY = 8;
 
         //Bauble Slots
         for(i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
             String slotType = BaubleExpandedSlots.getSlotType(i);
             if(BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
+                if (useOldGuiRendering) {
+                    addSlotToContainer(new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4))));
+                } else {
+                    addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
+                }
             }
         }
-
-        final int slotStartY = 8;
 
         //inventory slots
         for (i = 0; i < 3; ++i) {
@@ -99,29 +103,33 @@ public class ContainerPlayerExpanded extends Container {
             this.addSlotToContainer(new Slot(playerInv, i, slotStartY + i * slotOffset, 142));
         }
 
-        this.onCraftMatrixChanged(this.craftMatrix);
-        this.scrollTo(0);
+        if (!useOldGuiRendering) {
+            this.onCraftMatrixChanged(this.craftMatrix);
+            this.scrollTo(0);
+        }
     }
 
     @Override
     public void onCraftMatrixChanged(IInventory par1IInventory) {
+        if (!useOldGuiRendering) {
         this.craftResult.setInventorySlotContents(0, CraftingManager.getInstance().findMatchingRecipe(this.craftMatrix, this.thePlayer.worldObj));
+        }
     }
 
     @Override
     public void onContainerClosed(EntityPlayer player) {
         super.onContainerClosed(player);
-        for (int i = 0; i < 4; ++i) {
-            ItemStack itemstack = this.craftMatrix.getStackInSlotOnClosing(i);
+        if (!useOldGuiRendering) {
+            for (int i = 0; i < 4; ++i) {
+                ItemStack itemstack = this.craftMatrix.getStackInSlotOnClosing(i);
 
-            if (itemstack != null) {
-                player.dropPlayerItemWithRandomChoice(itemstack, false);
+                if (itemstack != null) {
+                    player.dropPlayerItemWithRandomChoice(itemstack, false);
+                }
             }
-        }
 
-        this.craftResult.setInventorySlotContents(0, (ItemStack)null);
-        if (!player.worldObj.isRemote) {
-            PlayerHandler.setPlayerBaubles(player, baubles);
+            this.craftResult.setInventorySlotContents(0, (ItemStack) null);
+            //if (!player.worldObj.isRemote) {PlayerHandler.setPlayerBaubles(player, baubles);}
         }
     }
 
@@ -156,7 +164,7 @@ public class ContainerPlayerExpanded extends Container {
     }
 
     public boolean canScroll() {
-        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8 && !useOldGuiRendering) {
             return true;
         }
         return false;
@@ -175,7 +183,10 @@ public class ContainerPlayerExpanded extends Container {
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
         ItemStack returnStack = null;
         Slot slot = (Slot) inventorySlots.get(slotIndex);
-        final int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        if (useOldGuiRendering) {
+            visibleBaubleSlots -= -5;
+        }
 
         if(slot != null && slot.getHasStack()) {
             ItemStack originalStack = slot.getStack();

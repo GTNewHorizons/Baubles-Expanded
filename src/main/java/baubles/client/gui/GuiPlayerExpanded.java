@@ -34,13 +34,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static baubles.common.BaublesConfig.useOldGuiRendering;
 import static net.minecraft.client.gui.inventory.GuiInventory.func_147046_a;
 
 @Optional.Interface(iface = "codechicken.nei.api.INEIGuiHandler", modid = "NotEnoughItems")
 public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
+    public static final ResourceLocation background = new ResourceLocation("baubles","textures/gui/bauble_inventory.png");
     public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
-
     private static final ResourceLocation creative_inventory_tabs = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
 
 	/**
@@ -54,7 +55,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     public boolean showActivePotionEffects;
 
-    /** Amount scrolled in Creative mode inventory (0 = top, 1 = bottom) */
+    /** Amount scrolled in inventory (0 = top, 1 = bottom) */
     private float currentScroll;
     /** True if the scrollbar is being dragged */
     private boolean isScrolling;
@@ -84,7 +85,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         buttonList.clear();
         super.initGui();
 
-        if (!this.mc.thePlayer.getActivePotionEffects().isEmpty()) {
+        if (!this.mc.thePlayer.getActivePotionEffects().isEmpty() && !useOldGuiRendering) {
             this.showActivePotionEffects = true;
         }
     }
@@ -103,13 +104,20 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        this.fontRendererObj.drawString(I18n.format("container.crafting"), 86, 16, 4210752);
+        if (!useOldGuiRendering) {
+            this.fontRendererObj.drawString(I18n.format("container.crafting"), 86, 16, 4210752);
+        }
     }
 
     @Override
-    protected void drawGuiContainerBackgroundLayer(float p_146976_1_, int p_146976_2_, int p_146976_3_) {
+    protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-        mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
+        if (useOldGuiRendering) {
+            mc.getTextureManager().bindTexture(background);
+        } else {
+            mc.getTextureManager().bindTexture(GuiInventory.field_147001_a);
+        }
+
         this.drawBaubleSlots();
         if (showActivePotionEffects) {
             drawPotionEffects();
@@ -122,34 +130,36 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private void drawBaubleSlots() {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
-        this.mc.getTextureManager().bindTexture(gui_background);
+        if (!useOldGuiRendering) {
+            this.mc.getTextureManager().bindTexture(gui_background);
+        }
 
         final int slotOffset = 18;
-        final int slotStartX = guiLeft - 26;
-        final int slotStartY = 12;
+        int slotStartX = guiLeft - 26;
+        int slotStartY = 12;
 
-        if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
-            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
-            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
+        if (useOldGuiRendering) {
+            slotStartX = guiLeft + 79;
+            slotStartY = guiTop +7;
         } else {
-            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
-            this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
-            this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
-            this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+            if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
+            } else {
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
+                this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
+                this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
+                this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+            }
         }
 
         //bauble slot backgrounds
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
-            int slotPage = 1;
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                //Slot slot = (Slot)inventorySlots.inventorySlots.get(slotIndex + 4);
-
-
-                if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8 && slotPage == 1) {
-                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
-                }
-                if (BaubleExpandedSlots.slotsCurrentlyUsed() >= 9 && BaubleExpandedSlots.slotsCurrentlyUsed() >= 16 && slotPage == 2) {
+                if (useOldGuiRendering) {
+                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
+                } else {
                     drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
                 }
             }
@@ -296,7 +306,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Optional.Method(modid = "NotEnoughItems")
     public boolean hideItemPanelSlot(GuiContainer gui, int slotX, int slotY, int slotW, int slotH) {
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
-        if (gui instanceof GuiPlayerExpanded) {
+        if (gui instanceof GuiPlayerExpanded && !useOldGuiRendering) {
 
             int slotIndent = 26;
             int slotWidth = 18;
