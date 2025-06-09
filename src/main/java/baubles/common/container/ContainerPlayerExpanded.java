@@ -183,9 +183,10 @@ public class ContainerPlayerExpanded extends Container {
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
         ItemStack returnStack = null;
         Slot slot = (Slot) inventorySlots.get(slotIndex);
-        int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        final int visibleBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        int craftingActive = 5;
         if (useOldGuiRendering) {
-            visibleBaubleSlots -= -5;
+            craftingActive = 0;
         }
 
         if(slot != null && slot.getHasStack()) {
@@ -194,28 +195,28 @@ public class ContainerPlayerExpanded extends Container {
             Item item = returnStack.getItem();
 
             if (slotIndex == 0) {
-                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, true)) {
+                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, true)) {
                     return null;
                 }
                 slot.onSlotChange(originalStack, returnStack);
             }
             else if (slotIndex >= 1 && slotIndex < 5) {
-                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
+                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
                     return null;
                 }
             }
             else if (slotIndex >= 5 && slotIndex < 9) {
-                if (!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
+                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
                     return null;
                 }
             }
-            else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(5 + ((ItemArmor) item).armorType)).getHasStack()) {
-                int armorSlot = 5 + ((ItemArmor) item).armorType;
+            else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(craftingActive + ((ItemArmor) item).armorType)).getHasStack()) {
+                int armorSlot = craftingActive + ((ItemArmor) item).armorType;
                 if(!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                     returnStack = null;
                 }
-            } else if(slotIndex >= 9 + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
-                for(int baubleSlot = 9; baubleSlot < 4 + visibleBaubleSlots; baubleSlot++) {
+            } else if(slotIndex >= 4 + craftingActive + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
+                for(int baubleSlot = 4 + craftingActive; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
                     if(returnStack == null) {
                         break;
                     }
@@ -233,15 +234,15 @@ public class ContainerPlayerExpanded extends Container {
                 		}
                 	}
                 }
-            } else if(slotIndex >= 9 + visibleBaubleSlots && slotIndex < 36 + visibleBaubleSlots) {
-                if(!mergeItemStack(originalStack, 36 + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
+            } else if(slotIndex >= 4 + craftingActive + visibleBaubleSlots && slotIndex < 31 + craftingActive + visibleBaubleSlots) {
+                if(!mergeItemStack(originalStack, 31 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
-            } else if(slotIndex >= 36 + visibleBaubleSlots && slotIndex < 45 + visibleBaubleSlots) {
-                if(!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 36 + visibleBaubleSlots, false)) {
+            } else if(slotIndex >= 31 + craftingActive + visibleBaubleSlots && slotIndex < 40 + craftingActive + visibleBaubleSlots) {
+                if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 31 + craftingActive + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
-            } else if(!mergeItemStack(originalStack, 9 + visibleBaubleSlots, 45 + visibleBaubleSlots, false, slot)) {
+            } else if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 40 + visibleBaubleSlots, false, slot)) {
                 returnStack = null;
             }
 
