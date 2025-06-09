@@ -194,23 +194,23 @@ public class ContainerPlayerExpanded extends Container {
             returnStack = originalStack.copy();
             Item item = returnStack.getItem();
 
-            if (slotIndex == 0) {
-                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, true)) {
-                    return null;
+            if (!useOldGuiRendering) {
+                if (slotIndex == 0) {
+                    if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, true)) {
+                        return null;
+                    }
+                    slot.onSlotChange(originalStack, returnStack);
+                } else if (slotIndex >= 1 && slotIndex < 5) {
+                    if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
+                        return null;
+                    }
+                } else if (slotIndex >= 5 && slotIndex < 9) {
+                    if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
+                        return null;
+                    }
                 }
-                slot.onSlotChange(originalStack, returnStack);
             }
-            else if (slotIndex >= 1 && slotIndex < 5) {
-                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
-                    return null;
-                }
-            }
-            else if (slotIndex >= 5 && slotIndex < 9) {
-                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 45 + visibleBaubleSlots, false)) {
-                    return null;
-                }
-            }
-            else if (item instanceof ItemArmor && !((Slot) inventorySlots.get(craftingActive + ((ItemArmor) item).armorType)).getHasStack()) {
+            if (item instanceof ItemArmor && !((Slot) inventorySlots.get(craftingActive + ((ItemArmor) item).armorType)).getHasStack()) {
                 int armorSlot = craftingActive + ((ItemArmor) item).armorType;
                 if(!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                     returnStack = null;
@@ -223,7 +223,7 @@ public class ContainerPlayerExpanded extends Container {
                 	if(!((Slot) inventorySlots.get(baubleSlot)).getHasStack()) {
                 		String[] types;
                 		if(item instanceof IBaubleExpanded) {
-                			types = ((IBaubleExpanded)item).getBaubleTypes(returnStack);
+                			types = ((IBaubleExpanded) item).getBaubleTypes(returnStack);
                 		} else {
                 			types = new String[] {BaubleExpandedSlots.getTypeFromBaubleType(((IBauble)item).getBaubleType(returnStack))};
                 		}
@@ -242,7 +242,7 @@ public class ContainerPlayerExpanded extends Container {
                 if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 31 + craftingActive + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
-            } else if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 40 + visibleBaubleSlots, false, slot)) {
+            } else if(!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false, slot)) {
                 returnStack = null;
             }
 
