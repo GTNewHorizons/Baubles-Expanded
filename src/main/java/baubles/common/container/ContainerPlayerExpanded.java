@@ -22,12 +22,9 @@ import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
 import javax.annotation.Nonnull;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class ContainerPlayerExpanded extends Container {
 
-    public SortedMap<Integer, String> baubleSlotMap = new TreeMap<>();
     public InventoryCrafting craftMatrix = new InventoryCrafting(this, 2, 2);
     public IInventory craftResult = new InventoryCraftResult();
     public InventoryBaubles baubles;
