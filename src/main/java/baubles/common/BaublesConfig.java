@@ -42,7 +42,7 @@ public class BaublesConfig {
         ).getIntList();
 
         //categoryMenu
-        useOldGuiButton = config.getBoolean("useOldGGuiButton", categoryMenu, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
+        useOldGuiButton = config.getBoolean("useOldGuiButton", categoryMenu, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
         useOldGuiRendering = config.getBoolean("useOldRendering", categoryMenu, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");
         manualSlotSelection = config.getBoolean("manualSlotSelection", categoryMenu, manualSlotSelection,
