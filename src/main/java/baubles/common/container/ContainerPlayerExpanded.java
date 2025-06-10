@@ -216,7 +216,7 @@ public class ContainerPlayerExpanded extends Container {
                     returnStack = null;
                 }
             } else if(slotIndex >= 4 + craftingActive + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
-                for(int baubleSlot = 4 + craftingActive; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
+                for(int baubleSlot = 4; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
                     if(returnStack == null) {
                         break;
                     }
