@@ -239,7 +239,7 @@ public class ContainerPlayerExpanded extends Container {
                     returnStack = null;
                 }
             } else if(slotIndex >= 31 + craftingActive + visibleBaubleSlots && slotIndex < 40 + craftingActive + visibleBaubleSlots) {
-                if(!mergeItemStack(originalStack, 4 + visibleBaubleSlots, 31 + craftingActive + visibleBaubleSlots, false)) {
+                if(!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 31 + craftingActive + visibleBaubleSlots, false)) {
                     returnStack = null;
                 }
             } else if(!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false, slot)) {
