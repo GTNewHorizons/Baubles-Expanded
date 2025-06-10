@@ -204,10 +204,6 @@ public class ContainerPlayerExpanded extends Container {
                     if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
                         return null;
                     }
-                } else if (slotIndex >= 5 && slotIndex < 9) {
-                    if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
-                        return null;
-                    }
                 }
             }
             if (item instanceof ItemArmor && !((Slot) inventorySlots.get(craftingActive + ((ItemArmor) item).armorType)).getHasStack()) {
@@ -216,7 +212,7 @@ public class ContainerPlayerExpanded extends Container {
                     returnStack = null;
                 }
             } else if(slotIndex >= 4 + craftingActive + visibleBaubleSlots && item instanceof IBauble && ((IBauble) item).canEquip(returnStack, thePlayer)) {
-                for(int baubleSlot = 4; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
+                for(int baubleSlot = 4 + craftingActive; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
                     if(returnStack == null) {
                         break;
                     }
@@ -228,7 +224,9 @@ public class ContainerPlayerExpanded extends Container {
                 			types = new String[] {BaubleExpandedSlots.getTypeFromBaubleType(((IBauble)item).getBaubleType(returnStack))};
                 		}
                 		for(String type : types) {
-                			if((type.equals(BaubleExpandedSlots.universalType) || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - 4))) && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
+                			if((type.equals(BaubleExpandedSlots.universalType)
+                                || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - 4 - craftingActive)))
+                                && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
                                 returnStack = null;
                 			}
                 		}

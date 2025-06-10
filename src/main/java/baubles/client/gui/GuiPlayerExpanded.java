@@ -5,6 +5,7 @@ import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
 import codechicken.nei.api.INEIGuiHandler;
 import codechicken.nei.api.TaggedInventoryArea;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -248,10 +249,25 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
     }
 
+    private static boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
+
     @Override
     public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
+        if (wheel == 0) {
+            return;
+        }
+        if (!hasLwjgl3) {
+            // LWJGL2 reports different scroll values for every platform, 120 for one tick on Windows.
+            // LWJGL3 reports the delta in exact scroll ticks.
+            // Round away from zero to avoid dropping small scroll events
+            if (wheel > 0) {
+                wheel = Math.addExact(Math.addExact(wheel, 120), -1) / 120;
+            } else {
+                wheel = -(int) Math.addExact(Math.addExact(-wheel, 120), -1) / 120;
+            }
+        }
         if (this.needsScrollBars()) {
             int i = BaubleExpandedSlots.slotsCurrentlyUsed();
             this.currentScroll = (float)((double)this.currentScroll - wheel / (double) i);
