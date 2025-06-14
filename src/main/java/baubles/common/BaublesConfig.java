@@ -26,6 +26,7 @@ public class BaublesConfig {
     static final String categoryDebug = "debug";
     static final String categoryGeneral = "general";
     static final String categoryMenu = "menu";
+    static final String categoryClient = "client";
     static final String categoryOverride = "override";
 
     public static void loadConfig(Configuration config) {
@@ -41,9 +42,12 @@ public class BaublesConfig {
             "IDs of enchantments that should be treated as soul bound when on items in a bauble slot."
         ).getIntList();
 
+        //categoryClient
+        useOldGuiButton = config.getBoolean("useOldGuiButton", categoryClient, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
+        useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
+
+
         //categoryMenu
-        useOldGuiButton = config.getBoolean("useOldGuiButton", categoryMenu, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
-        useOldGuiRendering = config.getBoolean("useOldRendering", categoryMenu, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");
         manualSlotSelection = config.getBoolean("manualSlotSelection", categoryMenu, manualSlotSelection,
             "Manually override slot assignments.\n!Bauble slot types must be configured manually with this option enabled!\n"
