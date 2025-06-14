@@ -297,6 +297,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 	}
 
     @Override
+    protected void handleMouseClick(Slot slotIn, int slotId, int clickedButton, int clickType) {
+
+        if (slotIn != null && clickType == 4 && slotIn.xDisplayPosition < 0 && !useOldGuiRendering) {
+            clickType = 0;
+        }
+
+        super.handleMouseClick(slotIn, slotId, clickedButton, clickType);
+    }
+
+    @Override
     @Optional.Method(modid = "NotEnoughItems")
     public VisiblityData modifyVisiblity(GuiContainer gui, VisiblityData currentVisibility) {
         return null;
@@ -312,16 +322,6 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Optional.Method(modid = "NotEnoughItems")
     public List<TaggedInventoryArea> getInventoryAreas(GuiContainer gui) {
         return Collections.emptyList();
-    }
-
-    @Override
-    protected void handleMouseClick(Slot slotIn, int slotId, int clickedButton, int clickType) {
-
-        if (slotIn != null && clickType == 4 && slotIn.xDisplayPosition < 0 && !useOldGuiRendering) {
-            clickType = 0;
-        }
-
-        super.handleMouseClick(slotIn, slotId, clickedButton, clickType);
     }
 
     @Override
