@@ -112,7 +112,7 @@ public class ContainerPlayerExpanded extends Container {
     @Override
     public void onCraftMatrixChanged(IInventory par1IInventory) {
         if (!useOldGuiRendering) {
-        this.craftResult.setInventorySlotContents(0, CraftingManager.getInstance().findMatchingRecipe(this.craftMatrix, this.thePlayer.worldObj));
+            this.craftResult.setInventorySlotContents(0, CraftingManager.getInstance().findMatchingRecipe(this.craftMatrix, this.thePlayer.worldObj));
         }
     }
 
@@ -129,7 +129,9 @@ public class ContainerPlayerExpanded extends Container {
             }
 
             this.craftResult.setInventorySlotContents(0, (ItemStack) null);
-            //if (!player.worldObj.isRemote) {PlayerHandler.setPlayerBaubles(player, baubles);}
+            if (!player.worldObj.isRemote) {
+                PlayerHandler.setPlayerBaubles(player, baubles);
+            }
         }
     }
 

@@ -7,11 +7,13 @@ import codechicken.nei.api.INEIGuiHandler;
 import codechicken.nei.api.TaggedInventoryArea;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Optional;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
@@ -310,6 +312,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Optional.Method(modid = "NotEnoughItems")
     public List<TaggedInventoryArea> getInventoryAreas(GuiContainer gui) {
         return Collections.emptyList();
+    }
+
+    @Override
+    protected void handleMouseClick(Slot slotIn, int slotId, int clickedButton, int clickType) {
+
+        if (slotIn != null && clickType == 4 && slotIn.xDisplayPosition < 0 && !useOldGuiRendering) {
+            clickType = 0;
+        }
+
+        super.handleMouseClick(slotIn, slotId, clickedButton, clickType);
     }
 
     @Override
