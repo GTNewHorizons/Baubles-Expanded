@@ -10,6 +10,9 @@ public class BaublesConfig {
 	public static boolean hideDebugItem = true;
 
     public static int[] soulBoundEnchantments = new int[] {};
+
+    public static boolean useOldGuiButton = false;
+    public static boolean useOldGuiRendering = false;
     public static boolean showUnusedSlots = false;
     public static boolean manualSlotSelection = false;
 
@@ -23,6 +26,7 @@ public class BaublesConfig {
     static final String categoryDebug = "debug";
     static final String categoryGeneral = "general";
     static final String categoryMenu = "menu";
+    static final String categoryClient = "client";
     static final String categoryOverride = "override";
 
     public static void loadConfig(Configuration config) {
@@ -37,6 +41,11 @@ public class BaublesConfig {
         soulBoundEnchantments = config.get(categoryGeneral, "soulBoundEnchantments", soulBoundEnchantments,
             "IDs of enchantments that should be treated as soul bound when on items in a bauble slot."
         ).getIntList();
+
+        //categoryClient
+        useOldGuiButton = config.getBoolean("useOldGuiButton", categoryClient, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
+        useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
+
 
         //categoryMenu
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");

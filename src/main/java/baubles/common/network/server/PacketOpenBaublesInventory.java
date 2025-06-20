@@ -1,4 +1,4 @@
-package baubles.common.network;
+package baubles.common.network.server;
 
 import baubles.common.Baubles;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -8,9 +8,9 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class PacketOpenBaublesInventory implements IMessage, IMessageHandler<PacketOpenBaublesInventory, IMessage> {
-	
+
 	public PacketOpenBaublesInventory() {}
-	
+
 	public PacketOpenBaublesInventory(EntityPlayer player) {}
 
 	@Override
