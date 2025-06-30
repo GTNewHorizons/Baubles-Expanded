@@ -1,9 +1,6 @@
 package baubles.common.network;
 
 import baubles.common.Baubles;
-import baubles.common.network.client.PacketSyncBauble;
-import baubles.common.network.server.PacketOpenBaublesInventory;
-import baubles.common.network.server.PacketOpenNormalInventory;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;

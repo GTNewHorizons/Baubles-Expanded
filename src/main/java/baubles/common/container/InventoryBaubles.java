@@ -10,7 +10,7 @@ import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.Baubles;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
-import baubles.common.network.client.PacketSyncBauble;
+import baubles.common.network.PacketSyncBauble;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
