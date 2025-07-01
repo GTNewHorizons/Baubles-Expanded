@@ -1,4 +1,4 @@
-package baubles.common.network.server;
+package baubles.common.network;
 
 import baubles.common.Baubles;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;

@@ -1,4 +1,4 @@
-package baubles.common.network.client;
+package baubles.common.network;
 
 import java.io.IOException;
 
