@@ -46,7 +46,6 @@ public class BaublesConfig {
         useOldGuiButton = config.getBoolean("useOldGuiButton", categoryClient, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
         useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
 
-
         //categoryMenu
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");
         manualSlotSelection = config.getBoolean("manualSlotSelection", categoryMenu, manualSlotSelection,
@@ -60,11 +59,11 @@ public class BaublesConfig {
         config.getCategory(categoryOverride).get("defualtSlotTypes").set(currentSlotAssignments);
 
         overrideSlotTypes = config.getStringList("slotTypeOverrides", categoryOverride, overrideSlotTypes,
-            "Slot assignments to use if manualSlotSelection is enabled.\nAny assignents after the first " +
+            "Slot assignments to use if manualSlotSelection is enabled.\nAny assignments after the first " +
             BaubleExpandedSlots.slotLimit + " will be ignored.\n!Adding, moving, or removing slots of the "
             + BaubleExpandedSlots.amuletType + ", " + BaubleExpandedSlots.ringType + ", or " + BaubleExpandedSlots.beltType +
             " types will reduce compatibility with mods made for original Baubles versions!\n",
-            currentlyRegisteredTypes.toArray(new String[currentlyRegisteredTypes.size()])
+            currentlyRegisteredTypes.toArray(new String[0])
         );
 
         if(manualSlotSelection) {

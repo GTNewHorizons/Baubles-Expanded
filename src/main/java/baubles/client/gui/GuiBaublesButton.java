@@ -16,65 +16,62 @@ public class GuiBaublesButton extends GuiButton {
     }
 
 	public void drawButton(Minecraft mc, int xx, int yy) {
-
-        if (this.visible) {
-            FontRenderer fontrenderer = mc.fontRenderer;
-            if (useOldGuiButton) {
-                mc.getTextureManager().bindTexture(GuiPlayerExpanded.background);
-            } else {
-                mc.getTextureManager().bindTexture(GuiPlayerExpanded.gui_background);
-            }
-            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-            this.field_146123_n = xx >= this.xPosition && yy >= this.yPosition && xx < this.xPosition + this.width && yy < this.yPosition + this.height;
-            int hover = this.getHoverState(this.field_146123_n);
-            GL11.glEnable(GL11.GL_BLEND);
-            OpenGlHelper.glBlendFunc(770, 771, 1, 0);
-            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-
-
-            if (hover == 1) {
-                if (useOldGuiButton) {
-                    this.drawTexturedModalRect(this.xPosition, this.yPosition, 200, 48, 10, 10);
-                } else {
-                    this.drawTexturedModalRect(this.xPosition, this.yPosition, 50, 0, 14, 14);
-                }
-            } else {
-                if (useOldGuiButton) {
-                    this.drawTexturedModalRect(this.xPosition, this.yPosition, 210, 48, 10, 10);
-                    this.drawCenteredString(fontrenderer, this.displayString,
-                        this.xPosition + 5, this.yPosition + this.height, 0xffffff);
-                } else {
-                    this.drawTexturedModalRect(this.xPosition, this.yPosition, 50, 14, 14, 14);
-
-                    int k = 0;
-                    int w = fontrenderer.getStringWidth(this.displayString);
-
-                    if (w > k) {
-                        k = w;
-                    }
-
-                    int j2 = this.xPosition + 20;
-                    int k2 = this.yPosition - this.height;
-                    int i1 = 8;
-
-                    int j1 = -267386864;
-                    this.drawGradientRect(j2 - 3, k2 - 4, j2 + k + 3, k2 - 3, j1, j1);
-                    this.drawGradientRect(j2 - 3, k2 + i1 + 3, j2 + k + 3, k2 + i1 + 4, j1, j1);
-                    this.drawGradientRect(j2 - 3, k2 - 3, j2 + k + 3, k2 + i1 + 3, j1, j1);
-                    this.drawGradientRect(j2 - 4, k2 - 3, j2 - 3, k2 + i1 + 3, j1, j1);
-                    this.drawGradientRect(j2 + k + 3, k2 - 3, j2 + k + 4, k2 + i1 + 3, j1, j1);
-                    int k1 = 1347420415;
-                    int l1 = (k1 & 16711422) >> 1 | k1 & -16777216;
-                    this.drawGradientRect(j2 - 3, k2 - 3 + 1, j2 - 3 + 1, k2 + i1 + 3 - 1, k1, l1);
-                    this.drawGradientRect(j2 + k + 2, k2 - 3 + 1, j2 + k + 3, k2 + i1 + 3 - 1, k1, l1);
-                    this.drawGradientRect(j2 - 3, k2 - 3, j2 + k + 3, k2 - 3 + 1, k1, k1);
-                    this.drawGradientRect(j2 - 3, k2 + i1 + 2, j2 + k + 3, k2 + i1 + 3, l1, l1);
-
-                    this.drawString(fontrenderer, this.displayString, this.xPosition + 20,
-                        this.yPosition - this.height, 0xffffff);
-                }
-                this.mouseDragged(mc, xx, yy);
-            }
+        if (!this.visible) {
+            return;
         }
+
+        FontRenderer fontrenderer = mc.fontRenderer;
+        if (useOldGuiButton) {
+            mc.getTextureManager().bindTexture(GuiPlayerExpanded.background);
+        } else {
+            mc.getTextureManager().bindTexture(GuiPlayerExpanded.gui_background);
+        }
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        this.field_146123_n = xx >= this.xPosition && yy >= this.yPosition && xx < this.xPosition + this.width && yy < this.yPosition + this.height;
+        int hover = this.getHoverState(this.field_146123_n);
+        GL11.glEnable(GL11.GL_BLEND);
+        OpenGlHelper.glBlendFunc(770, 771, 1, 0);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+
+        if (hover == 1) {
+            if (useOldGuiButton) {
+                this.drawTexturedModalRect(this.xPosition, this.yPosition, 200, 48, 10, 10);
+            } else {
+                this.drawTexturedModalRect(this.xPosition, this.yPosition, 50, 0, 14, 14);
+            }
+            return;
+        }
+
+        if (useOldGuiButton) {
+            this.drawTexturedModalRect(this.xPosition, this.yPosition, 210, 48, 10, 10);
+            this.drawCenteredString(fontrenderer, this.displayString,
+                this.xPosition + 5, this.yPosition + this.height, 0xffffff);
+        } else {
+            this.drawTexturedModalRect(this.xPosition, this.yPosition, 50, 14, 14, 14);
+
+            int labelWidth = fontrenderer.getStringWidth(this.displayString);
+
+            int labelX = this.xPosition + 20;
+            int labelY = this.yPosition - this.height;
+            int labelHeight = 8;
+
+            int borderColorDark  = 0xF0100010;
+            int borderColorLight = 0x505000FF;
+            int borderColorLightFaded = (borderColorLight & 0xFEFEFE) >> 1 | borderColorLight & 0xFF000000;
+
+            this.drawGradientRect(labelX - 3, labelY - 4, labelX + labelWidth + 3, labelY - 3, borderColorDark, borderColorDark);
+            this.drawGradientRect(labelX - 3, labelY + labelHeight + 3, labelX + labelWidth + 3, labelY + labelHeight + 4, borderColorDark, borderColorDark);
+            this.drawGradientRect(labelX - 3, labelY - 3, labelX + labelWidth + 3, labelY + labelHeight + 3, borderColorDark, borderColorDark);
+            this.drawGradientRect(labelX - 4, labelY - 3, labelX - 3, labelY + labelHeight + 3, borderColorDark, borderColorDark);
+            this.drawGradientRect(labelX + labelWidth + 3, labelY - 3, labelX + labelWidth + 4, labelY + labelHeight + 3, borderColorDark, borderColorDark);
+
+            this.drawGradientRect(labelX - 3, labelY - 2, labelX - 2, labelY + labelHeight + 2, borderColorLight, borderColorLightFaded);
+            this.drawGradientRect(labelX + labelWidth + 2, labelY - 2, labelX + labelWidth + 3, labelY + labelHeight + 2, borderColorLight, borderColorLightFaded);
+            this.drawGradientRect(labelX - 3, labelY - 3, labelX + labelWidth + 3, labelY - 2, borderColorLight, borderColorLight);
+            this.drawGradientRect(labelX - 3, labelY + labelHeight + 2, labelX + labelWidth + 3, labelY + labelHeight + 3, borderColorLightFaded, borderColorLightFaded);
+
+            this.drawString(fontrenderer, this.displayString, labelX, labelY, 0xFFFFFF);
+        }
+        this.mouseDragged(mc, xx, yy);
     }
 }

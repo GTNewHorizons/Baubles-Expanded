@@ -34,7 +34,6 @@ import net.minecraft.util.ResourceLocation;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import static baubles.common.BaublesConfig.useOldGuiRendering;
@@ -46,6 +45,8 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     public static final ResourceLocation background = new ResourceLocation("baubles","textures/gui/bauble_inventory.png");
     public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
     private static final ResourceLocation creative_inventory_tabs = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
+
+    private static final boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
 
 	/**
      * x size of the inventory window in pixels. Defined as  float, passed as int.
@@ -77,7 +78,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     public void updateScreen() {
     	try {
 			((ContainerPlayerExpanded) inventorySlots).baubles.blockEvents = false;
-		} catch (Exception e) {}
+		} catch (Exception ignored) {}
     }
 
     /**
@@ -126,8 +127,8 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             drawPotionEffects();
         }
 
-        //Player Model
-        func_147046_a(guiLeft + 51, guiTop + 75, 30, (float)(guiLeft + 51) - xSizeFloat, (float)(guiTop + 25) - ySizeFloat, mc.thePlayer);
+        // Player model
+        func_147046_a(guiLeft + 51, guiTop + 75, 30, (float) (guiLeft + 51) - xSizeFloat, (float) (guiTop + 25) - ySizeFloat, mc.thePlayer);
     }
 
     private void drawBaubleSlots() {
@@ -143,7 +144,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
         if (useOldGuiRendering) {
             slotStartX = guiLeft + 79;
-            slotStartY = guiTop +7;
+            slotStartY = guiTop + 7;
         } else {
             if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
                 this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
@@ -156,15 +157,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             }
         }
 
-        //bauble slot backgrounds
+        // Bauble slot backgrounds
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
-            if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                if (useOldGuiRendering) {
-                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
-                } else {
-                    drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
-                }
+            if (!BaublesConfig.showUnusedSlots && slotType.equals(BaubleExpandedSlots.unknownType)) {
+                continue;
+            }
+            if (useOldGuiRendering) {
+                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
+            } else {
+                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
             }
         }
     }
@@ -178,38 +180,40 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         int positionVertical = guiTop;
         Collection<PotionEffect> potionCollection = this.mc.thePlayer.getActivePotionEffects();
 
-        if (!potionCollection.isEmpty()) {
+        if (potionCollection.isEmpty()) {
+            return;
+        }
+
+        GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        int maxNumber = 33;
+
+        if (potionCollection.size() > 5) {
+            maxNumber = 132 / (potionCollection.size() - 1);
+        }
+
+        for (PotionEffect effect : potionCollection) {
+            Potion potion = Potion.potionTypes[effect.getPotionID()];
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-            GL11.glDisable(GL11.GL_LIGHTING);
-            int maxNumber = 33;
+            this.mc.getTextureManager().bindTexture(field_147001_a);
+            this.drawTexturedModalRect(positionHorizontal, positionVertical, 0, 166, 140, 32);
 
-            if (potionCollection.size() > 5) {
-                maxNumber = 132 / (potionCollection.size() - 1);
+            if (potion.hasStatusIcon()) {
+                int potionIconIndex = potion.getStatusIconIndex();
+                this.drawTexturedModalRect(positionHorizontal + 6, positionVertical + 7, potionIconIndex % 8 * 18, 198 + potionIconIndex / 8 * 18, 18, 18);
             }
 
-            for (Iterator iterator = this.mc.thePlayer.getActivePotionEffects().iterator(); iterator.hasNext(); positionVertical += maxNumber) {
-                PotionEffect potioneffect = (PotionEffect)iterator.next();
-                Potion potion = Potion.potionTypes[potioneffect.getPotionID()];
-                GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-                this.mc.getTextureManager().bindTexture(field_147001_a);
-                this.drawTexturedModalRect(positionHorizontal, positionVertical, 0, 166, 140, 32);
+            potion.renderInventoryEffect(positionHorizontal, positionVertical, effect, mc);
+            if (!potion.shouldRenderInvText(effect)) continue;
+            String potionName = I18n.format(potion.getName());
 
-                if (potion.hasStatusIcon()) {
-                    int potionIconIndex = potion.getStatusIconIndex();
-                    this.drawTexturedModalRect(positionHorizontal + 6, positionVertical + 7, potionIconIndex % 8 * 18, 198 + potionIconIndex / 8 * 18, 18, 18);
-                }
-
-                potion.renderInventoryEffect(positionHorizontal, positionVertical, potioneffect, mc);
-                if (!potion.shouldRenderInvText(potioneffect)) continue;
-                String potionName = I18n.format(potion.getName());
-
-                if (potioneffect.getAmplifier() >= 1) {
-                    potionName = potionName + " " + I18n.format("enchantment.level." + potioneffect.getAmplifier());
-                }
-                this.fontRendererObj.drawStringWithShadow(potionName, positionHorizontal + 10 + 18, positionVertical + 6, 16777215);
-                String s = Potion.getDurationString(potioneffect);
-                this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
+            if (effect.getAmplifier() >= 1) {
+                potionName = potionName + " " + I18n.format("enchantment.level." + effect.getAmplifier());
             }
+            this.fontRendererObj.drawStringWithShadow(potionName, positionHorizontal + 10 + 18, positionVertical + 6, 16777215);
+            String s = Potion.getDurationString(effect);
+            this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
+            positionVertical += maxNumber;
         }
     }
 
@@ -218,31 +222,34 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     }
 
     private void handleScrollbar(int mouseX, int mouseY) {
-        boolean flag = Mouse.isButtonDown(0);
-        int k = this.guiLeft;
-        int l = this.guiTop;
-        int i1 = k - 34;
-        int j1 = l + 12;
-        int k1 = i1 + 14;
-        int l1 = j1 + 139;
+        boolean leftMouseDown = Mouse.isButtonDown(0);
 
-        if (!this.wasClicking && flag && mouseX >= i1 && mouseY >= j1 && mouseX < k1 && mouseY < l1) {
+        int guiLeftEdge = this.guiLeft;
+        int guiTopEdge  = this.guiTop;
+
+        int scrollbarXStart = guiLeftEdge - 34;
+        int scrollbarYStart = guiTopEdge + 12;
+        int scrollbarXEnd = scrollbarXStart + 14;
+        int scrollbarYEnd = scrollbarYStart + 139;
+
+        if (!this.wasClicking && leftMouseDown && mouseX >= scrollbarXStart && mouseY >= scrollbarYStart &&
+            mouseX < scrollbarXEnd && mouseY < scrollbarYEnd) {
             this.isScrolling = this.needsScrollBars();
         }
 
-        if (!flag) {
+        if (!leftMouseDown) {
             this.isScrolling = false;
         }
 
-        this.wasClicking = flag;
+        this.wasClicking = leftMouseDown;
 
         if (this.isScrolling) {
-            this.currentScroll = ((float)(mouseY - j1) - 7.5F) / ((float)(l1 - j1) - 15.0F);
+            this.currentScroll = ((float) (mouseY - scrollbarYStart) - 7.5F) /
+                ((float) (scrollbarYEnd - scrollbarYStart) - 15.0F);
 
             if (this.currentScroll < 0.0F) {
                 this.currentScroll = 0.0F;
             }
-
             if (this.currentScroll > 1.0F) {
                 this.currentScroll = 1.0F;
             }
@@ -251,13 +258,11 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
     }
 
-    private static boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
-
     @Override
     public void handleMouseInput() {
         super.handleMouseInput();
         int wheel = Mouse.getEventDWheel();
-        if (wheel == 0) {
+        if (wheel == 0 || !this.needsScrollBars()) {
             return;
         }
         if (!hasLwjgl3) {
@@ -270,12 +275,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 wheel = -(int) Math.addExact(Math.addExact(-wheel, 120), -1) / 120;
             }
         }
-        if (this.needsScrollBars()) {
-            int i = BaubleExpandedSlots.slotsCurrentlyUsed();
-            this.currentScroll = (float)((double)this.currentScroll - wheel / (double) i);
-            this.currentScroll = MathHelper.clamp_float(this.currentScroll, 0.0F, 1.0F);
-            ((ContainerPlayerExpanded)this.inventorySlots).scrollTo(this.currentScroll);
-        }
+        int i = BaubleExpandedSlots.slotsCurrentlyUsed();
+        this.currentScroll = (float) ((double) this.currentScroll - wheel / (double) i);
+        this.currentScroll = MathHelper.clamp_float(this.currentScroll, 0.0F, 1.0F);
+        ((ContainerPlayerExpanded) this.inventorySlots).scrollTo(this.currentScroll);
     }
 
     @Override
@@ -298,11 +301,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     @Override
     protected void handleMouseClick(Slot slotIn, int slotId, int clickedButton, int clickType) {
-
         if (slotIn != null && clickType == 4 && slotIn.xDisplayPosition < 0 && !useOldGuiRendering) {
             clickType = 0;
         }
-
         super.handleMouseClick(slotIn, slotId, clickedButton, clickType);
     }
 
@@ -334,43 +335,43 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Optional.Method(modid = "NotEnoughItems")
     public boolean hideItemPanelSlot(GuiContainer gui, int slotX, int slotY, int slotW, int slotH) {
         int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
-        if (gui instanceof GuiPlayerExpanded && !useOldGuiRendering) {
-
-            int slotIndent = 26;
-            int slotWidth = 18;
-            if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
-                slotIndent = 42;
-                slotWidth = 36;
-            }
-            if (NEIClientConfig.ignorePotionOverlap()) {
-                return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
-            }
-            int x = this.guiLeft - 124 - slotIndent;
-            int y = this.guiTop;
-            Minecraft minecraft = gui.mc;
-            if (minecraft == null) {
-                return false;
-            }
-            EntityPlayerSP player = minecraft.thePlayer;
-            if (player == null) {
-                return false;
-            }
-            Collection<PotionEffect> activePotionEffects = player.getActivePotionEffects();
-            if (activePotionEffects.isEmpty()) {
-                return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
-            }
-            int height = 33;
-            if (activePotionEffects.size() > 5) {
-                height = 132 / (activePotionEffects.size() - 1);
-            }
-            Rectangle4i slotRect = new Rectangle4i(slotX, slotY, slotW, slotH);
-            Rectangle4i baubleSlots = new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4);
-            for (PotionEffect potioneffect : activePotionEffects) {
-                Rectangle4i box = new Rectangle4i(x, y, 140, 32);
-                box.include(baubleSlots);
-                if (box.intersects(slotRect)) return true;
-                y += height;
-            }
+        if (!(gui instanceof GuiPlayerExpanded) || useOldGuiRendering) {
+            return false;
+        }
+        int slotIndent = 26;
+        int slotWidth = 18;
+        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
+            slotIndent = 42;
+            slotWidth = 36;
+        }
+        if (NEIClientConfig.ignorePotionOverlap()) {
+            return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+        }
+        int x = this.guiLeft - 124 - slotIndent;
+        int y = this.guiTop;
+        Minecraft minecraft = gui.mc;
+        if (minecraft == null) {
+            return false;
+        }
+        EntityPlayerSP player = minecraft.thePlayer;
+        if (player == null) {
+            return false;
+        }
+        Collection<PotionEffect> activePotionEffects = player.getActivePotionEffects();
+        if (activePotionEffects.isEmpty()) {
+            return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+        }
+        int height = 33;
+        if (activePotionEffects.size() > 5) {
+            height = 132 / (activePotionEffects.size() - 1);
+        }
+        Rectangle4i slotRect = new Rectangle4i(slotX, slotY, slotW, slotH);
+        Rectangle4i baubleSlots = new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4);
+        for (PotionEffect effect : activePotionEffects) {
+            Rectangle4i box = new Rectangle4i(x, y, 140, 32);
+            box.include(baubleSlots);
+            if (box.intersects(slotRect)) return true;
+            y += height;
         }
         return false;
     }

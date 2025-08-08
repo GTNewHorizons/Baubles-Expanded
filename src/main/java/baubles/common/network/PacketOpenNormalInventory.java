@@ -24,6 +24,4 @@ public class PacketOpenNormalInventory implements IMessage, IMessageHandler<Pack
 		ctx.getServerHandler().playerEntity.openContainer = ctx.getServerHandler().playerEntity.inventoryContainer;
 		return null;
 	}
-
-
 }
