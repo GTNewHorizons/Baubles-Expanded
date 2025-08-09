@@ -15,22 +15,38 @@ import net.minecraft.nbt.NBTTagCompound;
 
 public class PlayerHandler {
 
-	private static HashMap<String, InventoryBaubles> playerBaubles = new HashMap<>();
+	private static HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
+	private static InventoryBaubles playerBaublesClient;
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
-		playerBaubles.remove(player.getCommandSenderName());
+		playerBaublesServer.remove(player.getCommandSenderName());
+	}
+
+	public static void clearClientPlayerBaubles() {
+		playerBaublesClient = null;
 	}
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
-		if (!playerBaubles.containsKey(player.getCommandSenderName())) {
-			InventoryBaubles inventory = new InventoryBaubles(player);
-			playerBaubles.put(player.getCommandSenderName(), inventory);
+		if (player.worldObj.isRemote) {
+			if (playerBaublesClient == null) {
+				playerBaublesClient = new InventoryBaubles(player);
+			}
+			return playerBaublesClient;
+		} else {
+			if (!playerBaublesServer.containsKey(player.getCommandSenderName())) {
+				InventoryBaubles inventory = new InventoryBaubles(player);
+				playerBaublesServer.put(player.getCommandSenderName(), inventory);
+			}
+			return playerBaublesServer.get(player.getCommandSenderName());
 		}
-		return playerBaubles.get(player.getCommandSenderName());
 	}
 
 	public static void setPlayerBaubles(EntityPlayer player, InventoryBaubles inventory) {
-		playerBaubles.put(player.getCommandSenderName(), inventory);
+		if (player.worldObj.isRemote) {
+			playerBaublesClient = inventory;
+		} else {
+			playerBaublesServer.put(player.getCommandSenderName(), inventory);
+		}
 	}
 
 	public static void loadPlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
@@ -68,7 +84,7 @@ public class PlayerHandler {
 				if(data != null) {
 					InventoryBaubles inventory = new InventoryBaubles(player);
 					inventory.readNBT(data);
-					playerBaubles.put(player.getCommandSenderName(), inventory);
+					playerBaublesServer.put(player.getCommandSenderName(), inventory);
 					if(save) {
 						savePlayerBaubles(player, mainFile, backupFile);
 					}
