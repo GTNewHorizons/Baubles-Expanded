@@ -140,7 +140,7 @@ public class ContainerPlayerExpanded extends Container {
 
     public void scrollTo(float offset) {
         if (!canScroll()) return;
-        final int activeBaubleSlots = BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : BaubleExpandedSlots.slotsCurrentlyUsed();
+        final int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
 
         offset = Math.max(0, Math.min(1, offset));
 
