@@ -224,16 +224,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private void handleScrollbar(int mouseX, int mouseY) {
         boolean leftMouseDown = Mouse.isButtonDown(0);
 
-        int guiLeftEdge = this.guiLeft;
-        int guiTopEdge  = this.guiTop;
-
-        int scrollbarXStart = guiLeftEdge - 34;
-        int scrollbarYStart = guiTopEdge + 12;
-        int scrollbarXEnd = scrollbarXStart + 14;
-        int scrollbarYEnd = scrollbarYStart + 139;
-
-        if (!this.wasClicking && leftMouseDown && mouseX >= scrollbarXStart && mouseY >= scrollbarYStart &&
-            mouseX < scrollbarXEnd && mouseY < scrollbarYEnd) {
+        if (!this.wasClicking && leftMouseDown && isClickInScrollbar(mouseX, mouseY)) {
             this.isScrolling = this.needsScrollBars();
         }
 
@@ -244,6 +235,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         this.wasClicking = leftMouseDown;
 
         if (this.isScrolling) {
+            int scrollbarYStart = this.guiTop + 12;
+            int scrollbarYEnd = scrollbarYStart + 139;
+
             this.currentScroll = ((float) (mouseY - scrollbarYStart) - 7.5F) /
                 ((float) (scrollbarYEnd - scrollbarYStart) - 15.0F);
 
@@ -305,6 +299,50 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             clickType = 0;
         }
         super.handleMouseClick(slotIn, slotId, clickedButton, clickType);
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        if (isClickInUI(mouseX, mouseY)) { // Prevent dropping items when clicking in UI
+            return;
+        }
+
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    protected void mouseMovedOrUp(int mouseX, int mouseY, int mouseButton) {
+        if (isClickInUI(mouseX, mouseY)) { // Prevent dropping items when clicking in UI
+            return;
+        }
+
+        super.mouseMovedOrUp(mouseX, mouseY, mouseButton);
+    }
+
+    /**
+     * Returns true if the mouse is clicked in the scroll bar.
+     */
+    private boolean isClickInScrollbar(int mouseX, int mouseY) {
+        int scrollbarXStart = this.guiLeft - 34;
+        int scrollbarYStart = this.guiTop + 12;
+        int scrollbarXEnd = scrollbarXStart + 14;
+        int scrollbarYEnd = scrollbarYStart + 139;
+
+        return mouseX >= scrollbarXStart && mouseY >= scrollbarYStart &&
+            mouseX < scrollbarXEnd && mouseY < scrollbarYEnd;
+    }
+
+    /**
+     * Returns true if the mouse is clicked in the scrollbar or the surrounding area.
+     */
+    private boolean isClickInUI(int mouseX, int mouseY) {
+        int scrollbarXStart = this.guiLeft - 42;
+        int scrollbarYStart = this.guiTop + 5;
+        int scrollbarXEnd = scrollbarXStart + 27;
+        int scrollbarYEnd = scrollbarYStart + 156;
+
+        return mouseX >= scrollbarXStart && mouseY >= scrollbarYStart &&
+            mouseX < scrollbarXEnd && mouseY < scrollbarYEnd;
     }
 
     @Override
