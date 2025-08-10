@@ -42,4 +42,9 @@ public interface IBauble {
 	 * Can this bauble be removed from a bauble slot
 	 */
 	boolean canUnequip(ItemStack itemstack, EntityLivingBase player);
+
+	/**
+	 * This method is called when the player is loaded
+	 */
+	default void onPlayerLoad(ItemStack itemstack, EntityLivingBase player) {}
 }

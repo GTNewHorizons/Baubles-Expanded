@@ -19,7 +19,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 	int slot;
 	int playerId;
 	ItemStack bauble=null;
-	boolean reset;
+	boolean initial;
 	
 	public PacketSyncBauble() {}
 	
@@ -31,14 +31,14 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		this.slot = slot;
 		this.bauble = PlayerHandler.getPlayerBaubles(player).getStackInSlot(slot);
 		this.playerId = player.getEntityId();
-		this.reset = reset;
+		this.initial = reset;
 	}
 
 	@Override
 	public void toBytes(ByteBuf buffer) {
 		buffer.writeByte(slot);
 		buffer.writeInt(playerId);
-		buffer.writeBoolean(reset);
+		buffer.writeBoolean(initial);
 		PacketBuffer pb = new PacketBuffer(buffer);
 		try { pb.writeItemStackToBuffer(bauble); } catch (IOException e) {}
 	}
@@ -48,7 +48,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 	{
 		slot = buffer.readByte();
 		playerId = buffer.readInt();
-		reset = buffer.readBoolean();
+		initial = buffer.readBoolean();
 		PacketBuffer pb = new PacketBuffer(buffer);
 		try { bauble = pb.readItemStackFromBuffer(); } catch (IOException e) {}
 	}
@@ -59,11 +59,14 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		if (world==null) return null;
 		Entity p = world.getEntityByID(message.playerId);
 		if (p !=null && p instanceof EntityPlayer) {
-			if (message.reset) {
-				PlayerHandler.clearClientPlayerBaubles();
+			if (message.initial) {
+				if (message.slot == 0) {
+					PlayerHandler.clearClientPlayerBaubles();
+				}
+				PlayerHandler.getPlayerBaubles((EntityPlayer) p).setInventorySlotContents(message.slot, message.bauble);
 				return null;
 			}
-			PlayerHandler.getPlayerBaubles((EntityPlayer) p).setInventorySlotContents(message.slot, message.bauble);
+			PlayerHandler.getPlayerBaubles((EntityPlayer) p).stackList[message.slot]=message.bauble;
 		}
 		return null;
 	}
