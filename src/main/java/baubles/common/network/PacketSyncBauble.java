@@ -2,6 +2,7 @@ package baubles.common.network;
 
 import java.io.IOException;
 
+import baubles.api.IBauble;
 import baubles.common.Baubles;
 import baubles.common.lib.PlayerHandler;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -59,14 +60,15 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		if (world==null) return null;
 		Entity p = world.getEntityByID(message.playerId);
 		if (p !=null && p instanceof EntityPlayer) {
-			if (message.initial) {
-				if (message.slot == 0) {
-					PlayerHandler.clearClientPlayerBaubles();
-				}
-				PlayerHandler.getPlayerBaubles((EntityPlayer) p).setInventorySlotContents(message.slot, message.bauble);
-				return null;
+			if (message.initial && message.slot == 0) {
+				PlayerHandler.clearClientPlayerBaubles();
 			}
 			PlayerHandler.getPlayerBaubles((EntityPlayer) p).stackList[message.slot]=message.bauble;
+			if (message.initial) {
+				if (message.bauble != null && message.bauble.getItem() instanceof IBauble itemBauble) {
+					itemBauble.onPlayerLoad(message.bauble, (EntityPlayer) p);
+				}
+			}
 		}
 		return null;
 	}
