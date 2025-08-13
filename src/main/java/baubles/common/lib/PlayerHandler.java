@@ -33,11 +33,7 @@ public class PlayerHandler {
 			}
 			return playerBaublesClient;
 		} else {
-			if (!playerBaublesServer.containsKey(player.getCommandSenderName())) {
-				InventoryBaubles inventory = new InventoryBaubles(player);
-				playerBaublesServer.put(player.getCommandSenderName(), inventory);
-			}
-			return playerBaublesServer.get(player.getCommandSenderName());
+			return playerBaublesServer.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
 		}
 	}
 
