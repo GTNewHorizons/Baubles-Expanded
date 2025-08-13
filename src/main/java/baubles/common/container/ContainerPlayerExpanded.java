@@ -23,11 +23,8 @@ public class ContainerPlayerExpanded extends Container {
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean par2, EntityPlayer player) {
         this.thePlayer = player;
-        baubles = new InventoryBaubles(player);
+        baubles = PlayerHandler.getPlayerBaubles(player);
         baubles.setEventHandler(this);
-        if (!player.worldObj.isRemote) {
-            baubles.stackList = PlayerHandler.getPlayerBaubles(player).stackList;
-        }
 
         int i;
         int j;
