@@ -16,22 +16,19 @@ import net.minecraft.nbt.NBTTagCompound;
 public class PlayerHandler {
 
 	private static HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
-	private static InventoryBaubles playerBaublesClient;
+	private static HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
 		playerBaublesServer.remove(player.getCommandSenderName());
 	}
 
 	public static void clearClientPlayerBaubles() {
-		playerBaublesClient = null;
+		playerBaublesClient.clear();
 	}
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
 		if (player.worldObj.isRemote) {
-			if (playerBaublesClient == null) {
-				playerBaublesClient = new InventoryBaubles(player);
-			}
-			return playerBaublesClient;
+			return playerBaublesClient.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
 		} else {
 			return playerBaublesServer.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
 		}
@@ -39,7 +36,7 @@ public class PlayerHandler {
 
 	public static void setPlayerBaubles(EntityPlayer player, InventoryBaubles inventory) {
 		if (player.worldObj.isRemote) {
-			playerBaublesClient = inventory;
+			playerBaublesClient.put(player.getCommandSenderName(), inventory);
 		} else {
 			playerBaublesServer.put(player.getCommandSenderName(), inventory);
 		}
