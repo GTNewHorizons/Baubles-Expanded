@@ -22,7 +22,7 @@ public class EventHandlerNetwork {
 		Side side = FMLCommonHandler.instance().getEffectiveSide();
 		if (side == Side.SERVER)        {
 			// Apply all baubles
-			IInventory baubles = BaublesApi.getBaubles(event.player);
+            InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(event.player);
 			for (int i = 0; i < baubles.getSizeInventory(); i++) {
 				ItemStack stack = baubles.getStackInSlot(i);
 				PacketHandler.INSTANCE.sendToAll(new PacketSyncBauble(event.player, i, true));
