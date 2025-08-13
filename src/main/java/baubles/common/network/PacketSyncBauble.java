@@ -63,12 +63,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 			if (message.initial && message.slot == 0) {
 				PlayerHandler.clearClientPlayerBaubles();
 			}
-			PlayerHandler.getPlayerBaubles((EntityPlayer) p).stackList[message.slot]=message.bauble;
-			if (message.initial) {
-				if (message.bauble != null && message.bauble.getItem() instanceof IBauble itemBauble) {
-					itemBauble.onPlayerLoad(message.bauble, (EntityPlayer) p);
-				}
-			}
+			PlayerHandler.getPlayerBaubles((EntityPlayer) p).setInventorySlotContents(message.slot, message.bauble);
 		}
 		return null;
 	}
