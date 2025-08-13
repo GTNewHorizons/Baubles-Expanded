@@ -18,7 +18,7 @@ import net.minecraft.item.ItemStack;
 public class EventHandlerNetwork {
 
 	@SubscribeEvent
-	public void playerLoggedInEvent (PlayerEvent.PlayerLoggedInEvent event)    {
+	public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)    {
 		Side side = FMLCommonHandler.instance().getEffectiveSide();
 		if (side == Side.SERVER)        {
 			// Apply all baubles
