@@ -7,9 +7,9 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
 
 public class PacketOpenNormalInventory implements IMessage, IMessageHandler<PacketOpenNormalInventory, IMessage> {
-	
+
 	public PacketOpenNormalInventory() {}
-	
+
 	public PacketOpenNormalInventory(EntityPlayer player) {}
 
 	@Override
@@ -20,10 +20,8 @@ public class PacketOpenNormalInventory implements IMessage, IMessageHandler<Pack
 
 	@Override
 	public IMessage onMessage(PacketOpenNormalInventory message, MessageContext ctx) {
-		ctx.getServerHandler().playerEntity.openContainer.onContainerClosed(ctx.getServerHandler().playerEntity);		
+		ctx.getServerHandler().playerEntity.openContainer.onContainerClosed(ctx.getServerHandler().playerEntity);
 		ctx.getServerHandler().playerEntity.openContainer = ctx.getServerHandler().playerEntity.inventoryContainer;
 		return null;
 	}
-
-
 }
