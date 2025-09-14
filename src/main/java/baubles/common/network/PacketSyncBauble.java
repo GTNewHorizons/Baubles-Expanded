@@ -15,13 +15,13 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.World;
 
 public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBauble, IMessage> {
-	
+
 	int slot;
 	int playerId;
-	ItemStack bauble=null;
-	
+	ItemStack bauble = null;
+
 	public PacketSyncBauble() {}
-	
+
 	public PacketSyncBauble(EntityPlayer player, int slot) {
 		this.slot = slot;
 		this.bauble = PlayerHandler.getPlayerBaubles(player).getStackInSlot(slot);
@@ -33,28 +33,25 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		buffer.writeByte(slot);
 		buffer.writeInt(playerId);
 		PacketBuffer pb = new PacketBuffer(buffer);
-		try { pb.writeItemStackToBuffer(bauble); } catch (IOException e) {}
+		try { pb.writeItemStackToBuffer(bauble); } catch (IOException ignored) {}
 	}
 
 	@Override
-	public void fromBytes(ByteBuf buffer) 
-	{
+	public void fromBytes(ByteBuf buffer) {
 		slot = buffer.readByte();
 		playerId = buffer.readInt();
 		PacketBuffer pb = new PacketBuffer(buffer);
-		try { bauble = pb.readItemStackFromBuffer(); } catch (IOException e) {}
+		try { bauble = pb.readItemStackFromBuffer(); } catch (IOException ignored) {}
 	}
 
 	@Override
 	public IMessage onMessage(PacketSyncBauble message, MessageContext ctx) {
 		World world = Baubles.proxy.getClientWorld();
-		if (world==null) return null;
-		Entity p = world.getEntityByID(message.playerId);
-		if (p !=null && p instanceof EntityPlayer) {
-			PlayerHandler.getPlayerBaubles((EntityPlayer) p).stackList[message.slot]=message.bauble;
+		if (world == null) return null;
+		Entity e = world.getEntityByID(message.playerId);
+		if (e instanceof EntityPlayer player) {
+			PlayerHandler.getPlayerBaubles(player).stackList[message.slot]=message.bauble;
 		}
 		return null;
 	}
-
-
 }

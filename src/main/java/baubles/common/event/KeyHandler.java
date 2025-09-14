@@ -1,11 +1,11 @@
 package baubles.common.event;
 
-import cpw.mods.fml.common.gameevent.InputEvent;
 import org.lwjgl.input.Keyboard;
 
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketOpenBaublesInventory;
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.StatCollector;

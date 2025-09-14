@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import baubles.api.BaubleType;
+import baubles.common.BaublesConfig;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.LoaderState;
 
@@ -227,7 +228,7 @@ public class BaubleExpandedSlots {
 	 * @return The number of bauble slots currently used.
 	 */
 	public static int slotsCurrentlyUsed() {
-		return slotLimit - newSlotsRemaining;
+		return BaublesConfig.showUnusedSlots ? BaubleExpandedSlots.slotLimit : slotLimit - newSlotsRemaining;
 	}
 
 	/**
