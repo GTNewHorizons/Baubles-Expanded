@@ -61,7 +61,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		Entity e = world.getEntityByID(message.playerId);
 		if (e instanceof EntityPlayer player) {
 			InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
-			if (message.initial ) {
+			if (message.initial) {
 				if (message.slot == 0) {
 					PlayerHandler.clearClientPlayerBaubles();
 				}
