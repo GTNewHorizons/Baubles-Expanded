@@ -15,22 +15,31 @@ import net.minecraft.nbt.NBTTagCompound;
 
 public class PlayerHandler {
 
-	private static HashMap<String, InventoryBaubles> playerBaubles = new HashMap<>();
+	private static HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
+	private static HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
-		playerBaubles.remove(player.getCommandSenderName());
+		playerBaublesServer.remove(player.getCommandSenderName());
+	}
+
+	public static void clearClientPlayerBaubles() {
+		playerBaublesClient.clear();
 	}
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
-		if (!playerBaubles.containsKey(player.getCommandSenderName())) {
-			InventoryBaubles inventory = new InventoryBaubles(player);
-			playerBaubles.put(player.getCommandSenderName(), inventory);
+		if (player.worldObj.isRemote) {
+			return playerBaublesClient.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
+		} else {
+			return playerBaublesServer.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
 		}
-		return playerBaubles.get(player.getCommandSenderName());
 	}
 
 	public static void setPlayerBaubles(EntityPlayer player, InventoryBaubles inventory) {
-		playerBaubles.put(player.getCommandSenderName(), inventory);
+		if (player.worldObj.isRemote) {
+			playerBaublesClient.put(player.getCommandSenderName(), inventory);
+		} else {
+			playerBaublesServer.put(player.getCommandSenderName(), inventory);
+		}
 	}
 
 	public static void loadPlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
@@ -68,7 +77,7 @@ public class PlayerHandler {
 				if(data != null) {
 					InventoryBaubles inventory = new InventoryBaubles(player);
 					inventory.readNBT(data);
-					playerBaubles.put(player.getCommandSenderName(), inventory);
+					playerBaublesServer.put(player.getCommandSenderName(), inventory);
 					if(save) {
 						savePlayerBaubles(player, mainFile, backupFile);
 					}

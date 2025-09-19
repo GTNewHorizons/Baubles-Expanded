@@ -81,7 +81,6 @@ public class EventHandlerEntity {
 		}
 
 		PlayerHandler.loadPlayerBaubles(player, mainFile, backupFile);
-		EventHandlerNetwork.syncBaubles(player);
 	}
 
 	public File getPlayerFile(String extension, File playerDirectory, String playerName) {

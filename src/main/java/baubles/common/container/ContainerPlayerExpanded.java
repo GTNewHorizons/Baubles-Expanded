@@ -35,11 +35,8 @@ public class ContainerPlayerExpanded extends Container {
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean isClient, EntityPlayer player) {
         this.thePlayer = player;
-        baubles = new InventoryBaubles(player);
+        baubles = PlayerHandler.getPlayerBaubles(player);
         baubles.setEventHandler(this);
-        if (isClient) {
-            baubles.stackList = PlayerHandler.getPlayerBaubles(player).stackList;
-        }
 
         int i;
         int j;
