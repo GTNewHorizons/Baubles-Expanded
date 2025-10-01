@@ -25,7 +25,7 @@ import net.minecraftforge.common.config.Configuration;
 public class Baubles {
 
     public static final String MODID = "Baubles";
-    public static final String MODNAME = "Baubles";
+    public static final String MODNAME = "Bobbles";
     public static final String VERSION = Tags.VERSION;
 
     @SidedProxy(clientSide = "baubles.client.ClientProxy", serverSide = "baubles.common.CommonProxy")
