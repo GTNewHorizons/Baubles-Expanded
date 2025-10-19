@@ -201,9 +201,7 @@ public class ContainerPlayerExpanded extends Container {
                     return null;
                 }
             }
-        }
-
-        if (item instanceof ItemArmor armor && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
+        } else if (item instanceof ItemArmor armor && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
             int armorSlot = craftingActive + armor.armorType;
             if (!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                 returnStack = null;
