@@ -25,6 +25,7 @@ public class EventHandlerNetwork {
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(event.player);
             PacketHandler.INSTANCE.sendToAll(new PacketSyncAllBauble(event.player));
             for (Object o : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
+                if (o == event.player) continue;
                 EntityPlayerMP player = (EntityPlayerMP) o;
                 PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(player), (EntityPlayerMP) event.player);
             }
