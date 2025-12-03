@@ -19,6 +19,7 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.MathHelper;
 
+import net.minecraft.util.StatCollector;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
@@ -32,6 +33,7 @@ import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -103,6 +105,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
 
+        handleMouseHover(mouseX, mouseY);
         handleScrollbar(mouseX, mouseY);
     }
 
@@ -214,6 +217,29 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             String s = Potion.getDurationString(effect);
             this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
             positionVertical += maxNumber;
+        }
+    }
+
+    private void handleMouseHover(int mouseX, int mouseY) {
+        ContainerPlayerExpanded expandedInventory = (ContainerPlayerExpanded) this.inventorySlots;
+
+        for (int slotIndex = 0; slotIndex < expandedInventory.getBaubleSlotCount(); slotIndex++) {
+            Slot slot = expandedInventory.getBaubleSlot(slotIndex);
+
+            // Cursor inside slot rect
+            if (!this.func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) continue;
+
+            ItemStack stack = expandedInventory.baubles.getStackInSlot(slotIndex);
+            if(stack != null && stack.stackSize > 0) continue; // Only show tooltip on empty slots
+
+            String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
+
+            ArrayList<String> type = new ArrayList<>();
+            type.add(StatCollector.translateToLocal("slot." + slotType));
+
+            // drawHoveringText with default font
+            func_146283_a(type, mouseX, mouseY);
+            return;
         }
     }
 
