@@ -21,8 +21,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
-import javax.annotation.Nonnull;
-
 import static baubles.common.BaublesConfig.useOldGuiRendering;
 
 public class ContainerPlayerExpanded extends Container {
@@ -33,6 +31,11 @@ public class ContainerPlayerExpanded extends Container {
 
     private final EntityPlayer thePlayer;
 
+    private int slotsAdded = 0;
+
+    private int baubleFirstSlotIndex = -1;
+    private int baubleSlotCount = 0;
+
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean isClient, EntityPlayer player) {
         this.thePlayer = player;
         baubles = PlayerHandler.getPlayerBaubles(player);
@@ -41,6 +44,7 @@ public class ContainerPlayerExpanded extends Container {
         int i;
         int j;
 
+        // Crafting slots
         if (!useOldGuiRendering) {
             this.addSlotToContainer(new SlotCrafting(playerInv.player, this.craftMatrix, this.craftResult, 0, 144, 36));
 
@@ -77,14 +81,16 @@ public class ContainerPlayerExpanded extends Container {
         final int slotStartY = 8;
 
         // Bauble slots
+        baubleFirstSlotIndex = slotsAdded;
         for (i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
             String slotType = BaubleExpandedSlots.getSlotType(i);
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                if (useOldGuiRendering) {
-                    addSlotToContainer(new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4))));
-                } else {
-                    addSlotToContainer(new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i)));
-                }
+                Slot slot = useOldGuiRendering
+                    ? new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4)))
+                    : new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i));
+
+                addSlotToContainer(slot);
+                baubleSlotCount++;
             }
         }
 
@@ -104,6 +110,13 @@ public class ContainerPlayerExpanded extends Container {
             this.onCraftMatrixChanged(this.craftMatrix);
             this.scrollTo(0);
         }
+    }
+
+    @Override
+    protected Slot addSlotToContainer(Slot slot) {
+        // Count slots as we add them so we can determine what the first Bauble slot index will be
+        slotsAdded++;
+        return super.addSlotToContainer(slot);
     }
 
     @Override
@@ -149,8 +162,7 @@ public class ContainerPlayerExpanded extends Container {
         }
 
         for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotLimit; i++) {
-            //TODO: Find a way to not use a magic number to get to the correct ID range for the Slot editing.
-            Slot slot = (Slot) this.inventorySlots.get(9 + i);
+            Slot slot = (Slot) this.inventorySlots.get(baubleFirstSlotIndex + i);
             if (i >= 0) {
                 slot.yDisplayPosition = (12 - (slotOffset * 18) + (i) * 18);
                 if (slot.yDisplayPosition < 12 || slot.yDisplayPosition > 8 * 18) {
