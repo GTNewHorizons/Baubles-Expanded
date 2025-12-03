@@ -148,6 +148,15 @@ public class ContainerPlayerExpanded extends Container {
         }
     }
 
+    public int getBaubleSlotCount() {
+        return this.baubleSlotCount;
+    }
+
+    public SlotBauble getBaubleSlot(int slotIndex) {
+        if(slotIndex < 0 || slotIndex >= baubleSlotCount) return null;
+        return (SlotBauble) inventorySlots.get(baubleFirstSlotIndex + slotIndex);
+    }
+
     public void scrollTo(float offset) {
         if (!canScroll()) return;
         final int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
