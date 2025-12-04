@@ -1,5 +1,6 @@
 package baubles.client.gui;
 
+import baubles.common.lib.Utils;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
@@ -235,7 +236,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
 
             ArrayList<String> type = new ArrayList<>();
-            type.add(StatCollector.translateToLocal("slot." + slotType));
+            type.add(Utils.stripFormattingCodes(StatCollector.translateToLocal("slot." + slotType)));
 
             // drawHoveringText with default font
             func_146283_a(type, mouseX, mouseY);
