@@ -1,5 +1,7 @@
 package baubles.client.gui;
 
+import baubles.api.IBauble;
+import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.lib.Utils;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
@@ -235,8 +237,33 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
 
-            ArrayList<String> type = new ArrayList<>();
+            ArrayList<String> type = new ArrayList<>(2);
             type.add(Utils.stripFormattingCodes(StatCollector.translateToLocal("slot." + slotType)));
+
+            ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
+
+            if (heldItem != null && heldItem.stackSize > 0) {
+                boolean fitsInSlot = false;
+                if (heldItem.getItem() instanceof IBaubleExpanded baubleExpandedItem) {
+                    String[] itemBaubleTypes = baubleExpandedItem.getBaubleTypes(heldItem);
+                    for(String itemBaubleType : itemBaubleTypes) {
+                        if (slotType.equals(itemBaubleType)) {
+                            fitsInSlot = true;
+                            break;
+                        }
+                    }
+                }
+                else if(heldItem.getItem() instanceof IBauble baubleItem) {
+                    String itemBaubleType = BaubleExpandedSlots.getTypeFromBaubleType(baubleItem.getBaubleType(heldItem));
+                    if (slotType.equals(itemBaubleType)) {
+                        fitsInSlot = true;
+                    }
+                }
+
+                type.add(fitsInSlot
+                    ? StatCollector.translateToLocal("tooltip.fitsInSlot")
+                    : StatCollector.translateToLocal("tooltip.doesNotFitInSlot"));
+            }
 
             // drawHoveringText with default font
             func_146283_a(type, mouseX, mouseY);
