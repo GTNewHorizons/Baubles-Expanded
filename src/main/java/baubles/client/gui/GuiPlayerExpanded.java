@@ -71,6 +71,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     /** True if the left mouse button was held down last time drawScreen was called. */
     private boolean wasClicking;
 
+    private int tooltipIndexCache = -1;
+    private final List<String> tooltipCache = new ArrayList<>(2);
+
     public GuiPlayerExpanded(EntityPlayer player) {
         super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
         allowUserInput = true;
@@ -226,7 +229,25 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private void handleMouseHover(int mouseX, int mouseY) {
         ContainerPlayerExpanded expandedInventory = (ContainerPlayerExpanded) this.inventorySlots;
 
+        // Check the last cached slot first, as it is the most likely one to be hovered out of all of them
+        if(tooltipIndexCache != -1) {
+            Slot slot = expandedInventory.getBaubleSlot(tooltipIndexCache);
+
+            // Cursor inside slot rect
+            if (this.func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) {
+                ItemStack stack = expandedInventory.baubles.getStackInSlot(tooltipIndexCache);
+                if(stack == null || stack.stackSize == 0) {
+                    // drawHoveringText with default font
+                    func_146283_a(tooltipCache, mouseX, mouseY);
+                    return;
+                }
+            }
+        }
+
+        // Check the other slots
         for (int slotIndex = 0; slotIndex < expandedInventory.getBaubleSlotCount(); slotIndex++) {
+            if(slotIndex == tooltipIndexCache) continue;
+
             Slot slot = expandedInventory.getBaubleSlot(slotIndex);
 
             // Cursor inside slot rect
@@ -235,10 +256,12 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             ItemStack stack = expandedInventory.baubles.getStackInSlot(slotIndex);
             if(stack != null && stack.stackSize > 0) continue; // Only show tooltip on empty slots
 
+            tooltipIndexCache = slotIndex;
+
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
 
-            ArrayList<String> type = new ArrayList<>(2);
-            type.add(Utils.stripFormattingCodes(StatCollector.translateToLocal("slot." + slotType)));
+            tooltipCache.clear();
+            tooltipCache.add(Utils.stripFormattingCodes(StatCollector.translateToLocal("slot." + slotType)));
 
             ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
 
@@ -260,15 +283,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                     }
                 }
 
-                type.add(fitsInSlot
+                tooltipCache.add(fitsInSlot
                     ? StatCollector.translateToLocal("tooltip.fitsInSlot")
                     : StatCollector.translateToLocal("tooltip.doesNotFitInSlot"));
             }
 
             // drawHoveringText with default font
-            func_146283_a(type, mouseX, mouseY);
+            func_146283_a(tooltipCache, mouseX, mouseY);
             return;
         }
+
+        tooltipIndexCache = -1;
     }
 
     private boolean needsScrollBars() {
