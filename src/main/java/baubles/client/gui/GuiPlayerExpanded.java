@@ -54,11 +54,11 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private static final boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
 
 	/**
-     * x size of the inventory window in pixels. Defined as  float, passed as int.
+     * x size of the inventory window in pixels. Defined as float, passed as int.
      */
     private float xSizeFloat;
     /**
-     * y size of the inventory window in pixels. Defined as  float, passed as int.
+     * y size of the inventory window in pixels. Defined as float, passed as int.
      */
     private float ySizeFloat;
 
@@ -111,7 +111,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
 
-        handleMouseHover(mouseX, mouseY);
+        if(BaublesConfig.displayTooltipOnHover) {
+            handleMouseHover(mouseX, mouseY);
+        }
+
         handleScrollbar(mouseX, mouseY);
     }
 
