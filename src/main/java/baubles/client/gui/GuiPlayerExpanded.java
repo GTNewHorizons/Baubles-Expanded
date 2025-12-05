@@ -2,7 +2,6 @@ package baubles.client.gui;
 
 import baubles.api.IBauble;
 import baubles.api.expanded.IBaubleExpanded;
-import baubles.common.lib.Utils;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
@@ -264,7 +263,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
 
             tooltipCache.clear();
-            tooltipCache.add(Utils.stripFormattingCodes(StatCollector.translateToLocal("slot." + slotType)));
+
+            // Strip formatting codes
+            String strippedType = StatCollector.translateToLocal("slot." + slotType).replaceAll("§[0-9a-fklmnor]", "");
+            tooltipCache.add(strippedType);
 
             ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
 
