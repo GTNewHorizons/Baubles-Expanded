@@ -15,6 +15,7 @@ public class BaublesConfig {
     public static boolean useOldGuiRendering = false;
     public static boolean showUnusedSlots = false;
     public static boolean manualSlotSelection = false;
+    public static boolean displayTooltipOnHover = true;
 
     public static String[] overrideSlotTypes = new String[] {
         BaubleExpandedSlots.amuletType,
@@ -50,6 +51,9 @@ public class BaublesConfig {
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");
         manualSlotSelection = config.getBoolean("manualSlotSelection", categoryMenu, manualSlotSelection,
             "Manually override slot assignments.\n!Bauble slot types must be configured manually with this option enabled!\n"
+        );
+        displayTooltipOnHover = config.getBoolean("displayTooltipOnHover", categoryMenu, displayTooltipOnHover,
+            "When hovering the mouse over a bauble slot, display a tooltip with the bauble type and if a held item can be equipped in that slot.\n"
         );
 
         //categoryOverride
