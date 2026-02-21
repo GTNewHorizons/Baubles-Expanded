@@ -1,5 +1,7 @@
 package baubles.client.gui;
 
+import baubles.api.IBauble;
+import baubles.api.expanded.IBaubleExpanded;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
@@ -19,6 +21,7 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.MathHelper;
 
+import net.minecraft.util.StatCollector;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
@@ -32,6 +35,7 @@ import net.minecraft.client.gui.achievement.GuiStats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -49,11 +53,11 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private static final boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
 
 	/**
-     * x size of the inventory window in pixels. Defined as  float, passed as int.
+     * x size of the inventory window in pixels. Defined as float, passed as int.
      */
     private float xSizeFloat;
     /**
-     * y size of the inventory window in pixels. Defined as  float, passed as int.
+     * y size of the inventory window in pixels. Defined as float, passed as int.
      */
     private float ySizeFloat;
 
@@ -65,6 +69,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private boolean isScrolling;
     /** True if the left mouse button was held down last time drawScreen was called. */
     private boolean wasClicking;
+
+    private int tooltipIndexCache = -1;
+    private final List<String> tooltipCache = new ArrayList<>(2);
 
     public GuiPlayerExpanded(EntityPlayer player) {
         super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
@@ -102,6 +109,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         super.drawScreen(mouseX, mouseY, partialTicks);
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
+
+        if(BaublesConfig.displayTooltipOnHover) {
+            handleMouseHover(mouseX, mouseY);
+        }
 
         handleScrollbar(mouseX, mouseY);
     }
@@ -215,6 +226,79 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             this.fontRendererObj.drawStringWithShadow(s, positionHorizontal + 10 + 18, positionVertical + 6 + 10, 8355711);
             positionVertical += maxNumber;
         }
+    }
+
+    private void handleMouseHover(int mouseX, int mouseY) {
+        ContainerPlayerExpanded expandedInventory = (ContainerPlayerExpanded) this.inventorySlots;
+
+        // Check the last cached slot first, as it is the most likely one to be hovered out of all of them
+        if(tooltipIndexCache != -1) {
+            Slot slot = expandedInventory.getBaubleSlot(tooltipIndexCache);
+
+            // Cursor inside slot rect
+            if (this.func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) {
+                ItemStack stack = expandedInventory.baubles.getStackInSlot(tooltipIndexCache);
+                if(stack == null || stack.stackSize == 0) {
+                    // drawHoveringText with default font
+                    func_146283_a(tooltipCache, mouseX, mouseY);
+                    return;
+                }
+            }
+        }
+
+        // Check the other slots
+        for (int slotIndex = 0; slotIndex < expandedInventory.getBaubleSlotCount(); slotIndex++) {
+            if(slotIndex == tooltipIndexCache) continue;
+
+            Slot slot = expandedInventory.getBaubleSlot(slotIndex);
+
+            // Cursor inside slot rect
+            if (!this.func_146978_c(slot.xDisplayPosition, slot.yDisplayPosition, 16, 16, mouseX, mouseY)) continue;
+
+            ItemStack stack = expandedInventory.baubles.getStackInSlot(slotIndex);
+            if(stack != null && stack.stackSize > 0) continue; // Only show tooltip on empty slots
+
+            tooltipIndexCache = slotIndex;
+
+            String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
+
+            tooltipCache.clear();
+
+            // Strip formatting codes
+            String strippedType = StatCollector.translateToLocal("slot." + slotType).replaceAll("§[0-9a-fklmnor]", "");
+            tooltipCache.add(strippedType);
+
+            ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
+
+            if (heldItem != null && heldItem.stackSize > 0) {
+                boolean fitsInSlot = false;
+                if (heldItem.getItem() instanceof IBaubleExpanded baubleExpandedItem) {
+                    String[] itemBaubleTypes = baubleExpandedItem.getBaubleTypes(heldItem);
+                    for(String itemBaubleType : itemBaubleTypes) {
+                        if (itemBaubleType.equals(BaubleExpandedSlots.universalType) || slotType.equals(itemBaubleType)) {
+                            fitsInSlot = true;
+                            break;
+                        }
+                    }
+                }
+                else if(heldItem.getItem() instanceof IBauble baubleItem) {
+                    String itemBaubleType = BaubleExpandedSlots.getTypeFromBaubleType(baubleItem.getBaubleType(heldItem));
+                    if (itemBaubleType.equals(BaubleExpandedSlots.universalType) || slotType.equals(itemBaubleType)) {
+                        fitsInSlot = true;
+                    }
+                }
+
+                tooltipCache.add(fitsInSlot
+                    ? StatCollector.translateToLocal("tooltip.fitsInSlot")
+                    : StatCollector.translateToLocal("tooltip.doesNotFitInSlot"));
+            }
+
+            // drawHoveringText with default font
+            func_146283_a(tooltipCache, mouseX, mouseY);
+            return;
+        }
+
+        tooltipIndexCache = -1;
     }
 
     private boolean needsScrollBars() {
