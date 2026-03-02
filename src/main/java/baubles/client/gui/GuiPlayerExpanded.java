@@ -2,6 +2,7 @@ package baubles.client.gui;
 
 import baubles.api.IBauble;
 import baubles.api.expanded.IBaubleExpanded;
+import baubles.common.container.SlotBauble;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
@@ -157,14 +158,19 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             slotStartX = guiLeft + 79;
             slotStartY = guiTop + 7;
         } else {
-            if (BaubleExpandedSlots.slotsCurrentlyUsed() <= 8) {
-                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
-                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
-            } else {
-                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
-                this.drawTexturedModalRect(this.guiLeft - 42, this.guiTop + 4, 27, 0, 23, 158);
+            int columns = getColumns();
+
+            // First column is drawn separately because it has 2 extra pixels of padding
+            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
+            for (int col = 1; col < columns; col++) {
+                this.drawTexturedModalRect(this.guiLeft - 26 - col * 18, this.guiTop + 4, 0, 0, 25, 158);
+            }
+            if (needsScrollBars()) {
+                // Scrollbar panel sits immediately left of the leftmost slot column
+                int scrollPanelX = this.guiLeft - 26 - columns * 18;
+                this.drawTexturedModalRect(scrollPanelX, this.guiTop + 4, 27, 0, 23, 158);
                 this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
-                this.drawTexturedModalRect(this.guiLeft - 34, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+                this.drawTexturedModalRect(scrollPanelX + 8, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
             }
         }
 
@@ -177,15 +183,23 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             if (useOldGuiRendering) {
                 drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
             } else {
-                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * slotIndex), 200, 0, 18, 18);
+                // Draw the background rect at the slot's actual display position so it
+                // automatically follows scrolling and stays in sync with the item rendering.
+                ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+                SlotBauble baubleSlot = container.getBaubleSlot(slotIndex);
+                if (baubleSlot == null || baubleSlot.yDisplayPosition == -2000) {
+                    continue;
+                }
+                drawTexturedModalRect(guiLeft + baubleSlot.xDisplayPosition, guiTop + baubleSlot.yDisplayPosition, 200, 0, 18, 18);
             }
         }
     }
 
     private void drawPotionEffects() {
-        int slotIndent = 26;
-        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
-            slotIndent = 42;
+        int columns = getColumns();
+        int slotIndent = 26 + (columns - 1) * 18;
+        if (needsScrollBars()) {
+            slotIndent += 16;
         }
         int positionHorizontal = guiLeft - slotIndent - 124;
         int positionVertical = guiTop;
@@ -305,6 +319,14 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         return ((ContainerPlayerExpanded) this.inventorySlots).canScroll();
     }
 
+    /**
+     * Returns the number of slot columns to display, between 1 and maxColumns.
+     * Delegates to the container so both sides agree on the layout.
+     */
+    private int getColumns() {
+        return ((ContainerPlayerExpanded) this.inventorySlots).getColumns();
+    }
+
     private void handleScrollbar(int mouseX, int mouseY) {
         boolean leftMouseDown = Mouse.isButtonDown(0);
 
@@ -403,11 +425,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         super.mouseMovedOrUp(mouseX, mouseY, mouseButton);
     }
 
+    private int getScrollbarX() {
+        int columns = getColumns();
+        return this.guiLeft - 26 - columns * 18 + 8;
+    }
+
     /**
      * Returns true if the mouse is clicked in the scroll bar.
      */
     private boolean isClickInScrollbar(int mouseX, int mouseY) {
-        int scrollbarXStart = this.guiLeft - 34;
+        int scrollbarXStart = getScrollbarX();
         int scrollbarYStart = this.guiTop + 12;
         int scrollbarXEnd = scrollbarXStart + 14;
         int scrollbarYEnd = scrollbarYStart + 139;
@@ -416,17 +443,28 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             mouseX < scrollbarXEnd && mouseY < scrollbarYEnd;
     }
 
-    /**
-     * Returns true if the mouse is clicked in the scrollbar or the surrounding area.
-     */
     private boolean isClickInUI(int mouseX, int mouseY) {
-        int scrollbarXStart = this.guiLeft - 42;
-        int scrollbarYStart = this.guiTop + 5;
-        int scrollbarXEnd = scrollbarXStart + 27;
-        int scrollbarYEnd = scrollbarYStart + 156;
+        int columns = getColumns();
+        int uiYStart = this.guiTop + 4;
+        int uiYEnd   = uiYStart + 158;
 
-        return mouseX >= scrollbarXStart && mouseY >= scrollbarYStart &&
-            mouseX < scrollbarXEnd && mouseY < scrollbarYEnd;
+        if (mouseY < uiYStart || mouseY >= uiYEnd) {
+            return false;
+        }
+
+        if (mouseX >= this.guiLeft - 8 && mouseX < this.guiLeft) {
+            return true;
+        }
+
+        if (needsScrollBars()) {
+            int scrollPanelXStart = this.guiLeft - 26 - columns * 18;
+            int scrollPanelXEnd   = this.guiLeft - 8 - columns * 18;
+            if (mouseX >= scrollPanelXStart && mouseX < scrollPanelXEnd) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -456,21 +494,27 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Override
     @Optional.Method(modid = "NotEnoughItems")
     public boolean hideItemPanelSlot(GuiContainer gui, int slotX, int slotY, int slotW, int slotH) {
-        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
         if (!(gui instanceof GuiPlayerExpanded) || useOldGuiRendering) {
             return false;
         }
-        int slotIndent = 26;
-        int slotWidth = 18;
-        if (BaubleExpandedSlots.slotsCurrentlyUsed() > 8) {
-            slotIndent = 42;
-            slotWidth = 36;
+
+        int columns = getColumns();
+        int slotPanelWidth = 8 + columns * 18;
+        int slotIndent = 8 + columns * 18;
+        int totalWidth = slotPanelWidth;
+        if (needsScrollBars()) {
+            totalWidth += 16;
+            slotIndent += 16;
         }
+
+        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
+
+        Rectangle4i baubleSlots = new Rectangle4i(guiLeft - slotIndent, guiTop + 4, totalWidth, upperHeight + 4);
+
         if (NEIClientConfig.ignorePotionOverlap()) {
-            return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+            return baubleSlots.intersects(new Rectangle4i(slotX, slotY, slotW, slotH));
         }
-        int x = this.guiLeft - 124 - slotIndent;
-        int y = this.guiTop;
+
         Minecraft minecraft = gui.mc;
         if (minecraft == null) {
             return false;
@@ -481,14 +525,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
         Collection<PotionEffect> activePotionEffects = player.getActivePotionEffects();
         if (activePotionEffects.isEmpty()) {
-            return (new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4).intersects(new Rectangle4i(slotX, slotY, slotW, slotH)));
+            return baubleSlots.intersects(new Rectangle4i(slotX, slotY, slotW, slotH));
         }
+
         int height = 33;
         if (activePotionEffects.size() > 5) {
             height = 132 / (activePotionEffects.size() - 1);
         }
+
+        int x = this.guiLeft - 124 - slotIndent;
+        int y = this.guiTop;
         Rectangle4i slotRect = new Rectangle4i(slotX, slotY, slotW, slotH);
-        Rectangle4i baubleSlots = new Rectangle4i( guiLeft - slotIndent, guiTop + 4, slotWidth, upperHeight + 4);
         for (PotionEffect effect : activePotionEffects) {
             Rectangle4i box = new Rectangle4i(x, y, 140, 32);
             box.include(baubleSlots);
