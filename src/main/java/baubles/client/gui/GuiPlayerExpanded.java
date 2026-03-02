@@ -233,7 +233,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             }
         }
 
-        if (!useOldGuiRendering) {
+        if (!useOldGuiRendering && !needsScrollBars()) {
             int activeSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
             int totalRows = (activeSlots + columns - 1) / columns;
             int renderedCells = totalRows * columns;
