@@ -504,7 +504,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             slotIndent += 16;
         }
 
-        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
+        int upperHeight = 7 + ((BaubleExpandedSlots.slotsCurrentlyUsed() + columns - 1) / columns) * 18;
 
         Rectangle4i baubleSlots = new Rectangle4i(guiLeft - slotIndent, guiTop + 4, totalWidth, upperHeight + 4);
 
