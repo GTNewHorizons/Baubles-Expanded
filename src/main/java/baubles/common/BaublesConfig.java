@@ -10,6 +10,7 @@ public class BaublesConfig {
 	public static boolean hideDebugItem = true;
 
     public static int[] soulBoundEnchantments = new int[] {};
+    public static int maxColumns = 4;
 
     public static boolean useOldGuiButton = false;
     public static boolean useOldGuiRendering = false;
@@ -46,6 +47,8 @@ public class BaublesConfig {
         //categoryClient
         useOldGuiButton = config.getBoolean("useOldGuiButton", categoryClient, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
         useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\n");
+        maxColumns = config.getInt("maxColumns", categoryClient, 4, 1, 5, "Maximum number of columns shown in the baubles inventory (1-5).\n"
+        );
 
         //categoryMenu
         showUnusedSlots = config.getBoolean("showUnusedSlots", categoryMenu, showUnusedSlots, "Display unused Bauble slots.\n");

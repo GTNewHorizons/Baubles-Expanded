@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
+import static baubles.common.BaublesConfig.maxColumns;
 import static baubles.common.BaublesConfig.useOldGuiRendering;
 
 public class ContainerPlayerExpanded extends Container {
@@ -87,8 +88,7 @@ public class ContainerPlayerExpanded extends Container {
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
                 Slot slot = useOldGuiRendering
                     ? new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4)))
-                    : new SlotBauble(baubles, slotType, i, -18, 12 + (slotOffset * i));
-
+                    : new SlotBauble(baubles, slotType, i, -18 - (18 * (i % getColumns())), 12 + (slotOffset * (i / getColumns())));
                 addSlotToContainer(slot);
                 baubleSlotCount++;
             }
@@ -160,30 +160,41 @@ public class ContainerPlayerExpanded extends Container {
     public void scrollTo(float offset) {
         if (!canScroll()) return;
         final int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        final int columns = getColumns();
 
         offset = Math.max(0, Math.min(1, offset));
 
-        int shownSlots = 8;
-        int slotOffset = (int) (offset * (activeBaubleSlots - shownSlots) + 0.5F);
+        int shownRows = 8;
+        int totalRows = (activeBaubleSlots + columns - 1) / columns;
+        int slotRowOffset = (int) (offset * (totalRows - shownRows) + 0.5F);
 
-        if (slotOffset < 0) {
-            slotOffset = 0;
+        if (slotRowOffset < 0) {
+            slotRowOffset = 0;
         }
 
         for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotLimit; i++) {
             Slot slot = (Slot) this.inventorySlots.get(baubleFirstSlotIndex + i);
-            if (i >= 0) {
-                slot.yDisplayPosition = (12 - (slotOffset * 18) + (i) * 18);
-                if (slot.yDisplayPosition < 12 || slot.yDisplayPosition > 8 * 18) {
-                    // Hide the rest of the slots!
-                    slot.yDisplayPosition = -2000;
-                }
+            int row = i / columns;
+            int scrolledRow = row - slotRowOffset;
+            slot.yDisplayPosition = 12 + scrolledRow * 18;
+            if (slot.yDisplayPosition < 12 || slot.yDisplayPosition > 8 * 18) {
+                slot.yDisplayPosition = -2000;
             }
         }
     }
 
+    public int getColumns() {
+        int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        for (int cols = 1; cols < maxColumns; cols++) {
+            if ((activeBaubleSlots + cols - 1) / cols <= 8) {
+                return cols;
+            }
+        }
+        return maxColumns;
+    }
+
     public boolean canScroll() {
-        return BaubleExpandedSlots.slotsCurrentlyUsed() > 8 && !useOldGuiRendering;
+        return BaubleExpandedSlots.slotsCurrentlyUsed() > maxColumns * 8 && !useOldGuiRendering;
     }
 
     @Override
@@ -211,24 +222,32 @@ public class ContainerPlayerExpanded extends Container {
         returnStack = originalStack.copy();
         Item item = returnStack.getItem();
 
-        if (!useOldGuiRendering) {
-            if (slotIndex == 0) {
-                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, true)) {
-                    return null;
-                }
-                slot.onSlotChange(originalStack, returnStack);
-            } else if (slotIndex < 5) {
-                if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
-                    return null;
-                }
+        final int baubleStart = 4 + craftingActive;
+        final int baubleEnd   = baubleStart + visibleBaubleSlots;
+        final int invEnd      = baubleEnd + 27;
+        final int hotbarEnd   = invEnd + 9;
+
+        if (!useOldGuiRendering && slotIndex == 0) {
+            if (!mergeItemStack(originalStack, baubleEnd, hotbarEnd, true)) {
+                return null;
             }
-        } else if (item instanceof ItemArmor armor && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
+            slot.onSlotChange(originalStack, returnStack);
+        } else if (!useOldGuiRendering && slotIndex < 5) {
+            if (!mergeItemStack(originalStack, baubleEnd, hotbarEnd, false)) {
+                return null;
+            }
+        } else if (slotIndex >= baubleStart && slotIndex < baubleEnd) {
+            if (!mergeItemStack(originalStack, baubleEnd, hotbarEnd, false, slot)) {
+                returnStack = null;
+            }
+        } else if (item instanceof ItemArmor armor
+                && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
             int armorSlot = craftingActive + armor.armorType;
             if (!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                 returnStack = null;
             }
-        } else if (slotIndex >= 4 + craftingActive + visibleBaubleSlots && item instanceof IBauble bauble && bauble.canEquip(returnStack, thePlayer)) {
-            for (int baubleSlot = 4 + craftingActive; baubleSlot < 4 + craftingActive + visibleBaubleSlots; baubleSlot++) {
+        } else if (item instanceof IBauble bauble && bauble.canEquip(returnStack, thePlayer)) {
+            for (int baubleSlot = baubleStart; baubleSlot < baubleEnd; baubleSlot++) {
                 if (returnStack == null) {
                     break;
                 }
@@ -243,21 +262,21 @@ public class ContainerPlayerExpanded extends Container {
                 }
                 for (String type : types) {
                     if ((type.equals(BaubleExpandedSlots.universalType)
-                        || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - 4 - craftingActive)))
+                        || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - baubleStart)))
                         && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
                         returnStack = null;
                     }
                 }
             }
-        } else if (slotIndex >= 4 + craftingActive + visibleBaubleSlots && slotIndex < 31 + craftingActive + visibleBaubleSlots) {
-            if (!mergeItemStack(originalStack, 31 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false)) {
+        } else if (slotIndex >= baubleEnd && slotIndex < invEnd) {
+            if (!mergeItemStack(originalStack, invEnd, hotbarEnd, false)) {
                 returnStack = null;
             }
-        } else if (slotIndex >= 31 + craftingActive + visibleBaubleSlots && slotIndex < 40 + craftingActive + visibleBaubleSlots) {
-            if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 31 + craftingActive + visibleBaubleSlots, false)) {
+        } else if (slotIndex >= invEnd && slotIndex < hotbarEnd) {
+            if (!mergeItemStack(originalStack, baubleEnd, invEnd, false)) {
                 returnStack = null;
             }
-        } else if (!mergeItemStack(originalStack, 4 + craftingActive + visibleBaubleSlots, 40 + craftingActive + visibleBaubleSlots, false, slot)) {
+        } else if (!mergeItemStack(originalStack, baubleEnd, hotbarEnd, false, slot)) {
             returnStack = null;
         }
 
