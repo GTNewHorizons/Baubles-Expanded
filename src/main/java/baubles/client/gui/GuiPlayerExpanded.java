@@ -233,13 +233,26 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             }
         }
 
-        if (!useOldGuiRendering && !needsScrollBars()) {
+        if (!useOldGuiRendering) {
             int activeSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
             int totalRows = (activeSlots + columns - 1) / columns;
             int renderedCells = totalRows * columns;
+            int slotRowOffset = 0;
+            if (needsScrollBars()) {
+                int shownRows = 8;
+                slotRowOffset = (int) (this.currentScroll * (totalRows - shownRows) + 0.5F);
+                if (slotRowOffset < 0) {
+                    slotRowOffset = 0;
+                }
+            }
             for (int slotIndex = activeSlots; slotIndex < renderedCells; slotIndex++) {
+                int row = slotIndex / columns;
+                int scrolledRow = row - slotRowOffset;
+                int y = guiTop + 12 + (slotOffset * scrolledRow);
+                if (y < guiTop + 12 || y > guiTop + 8 * 18) {
+                    continue;
+                }
                 int x = guiLeft - 18 - (18 * (slotIndex % columns));
-                int y = guiTop + 12 + (slotOffset * (slotIndex / columns));
                 drawTexturedModalRect(
                     x - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_X,
                     y - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_Y,
