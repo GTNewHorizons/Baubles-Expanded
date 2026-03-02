@@ -146,9 +146,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private void drawBaubleSlots() {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
         int columns = getColumns();
-        int activeSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
-        int rows = (activeSlots + columns - 1) / columns;
-        int upperHeight = 7 + rows * 18;
+        int upperHeight = 7 + ((BaubleExpandedSlots.slotsCurrentlyUsed() + columns - 1) / columns) * 18;
         if (!useOldGuiRendering) {
             this.mc.getTextureManager().bindTexture(gui_background);
         }
@@ -193,8 +191,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             } else {
                 // Draw the background rect at the slot's actual display position so it
                 // automatically follows scrolling and stays in sync with the item rendering.
-                ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
-                SlotBauble baubleSlot = container.getBaubleSlot(slotIndex);
+                SlotBauble baubleSlot = ((ContainerPlayerExpanded) inventorySlots).getBaubleSlot(slotIndex);
                 if (baubleSlot == null || baubleSlot.yDisplayPosition == -2000) {
                     continue;
                 }
@@ -461,11 +458,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
 
         if (needsScrollBars()) {
-            int scrollPanelXStart = this.guiLeft - 26 - columns * 18;
-            int scrollPanelXEnd   = this.guiLeft - 8 - columns * 18;
-            if (mouseX >= scrollPanelXStart && mouseX < scrollPanelXEnd) {
-                return true;
-            }
+            return mouseX >= this.guiLeft - 26 - columns * 18 && mouseX < this.guiLeft - 8 - columns * 18;
         }
 
         return false;
