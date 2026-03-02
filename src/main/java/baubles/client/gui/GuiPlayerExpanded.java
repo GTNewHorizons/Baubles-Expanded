@@ -145,7 +145,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     private void drawBaubleSlots() {
         drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
-        int upperHeight = 7 + BaubleExpandedSlots.slotsCurrentlyUsed() * 18;
+        int columns = getColumns();
+        int activeSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        int rows = (activeSlots + columns - 1) / columns;
+        int upperHeight = 7 + rows * 18;
         if (!useOldGuiRendering) {
             this.mc.getTextureManager().bindTexture(gui_background);
         }
@@ -158,19 +161,24 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             slotStartX = guiLeft + 79;
             slotStartY = guiTop + 7;
         } else {
-            int columns = getColumns();
-
-            // First column is drawn separately because it has 2 extra pixels of padding
-            this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
-            for (int col = 1; col < columns; col++) {
-                this.drawTexturedModalRect(this.guiLeft - 26 - col * 18, this.guiTop + 4, 0, 0, 25, 158);
-            }
             if (needsScrollBars()) {
-                // Scrollbar panel sits immediately left of the leftmost slot column
+                // If scrollbar is active draw columns at full size always
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, 158);
+                for (int col = 1; col < columns; col++) {
+                    this.drawTexturedModalRect(this.guiLeft - 26 - col * 18, this.guiTop + 4, 0, 0, 25, 158);
+                }
                 int scrollPanelX = this.guiLeft - 26 - columns * 18;
                 this.drawTexturedModalRect(scrollPanelX, this.guiTop + 4, 27, 0, 23, 158);
                 this.mc.getTextureManager().bindTexture(creative_inventory_tabs);
                 this.drawTexturedModalRect(scrollPanelX + 8, this.guiTop + 12 + (int) (127f * this.currentScroll), 232, 0, 12, 15);
+            } else {
+                // Special case for <8 slots to not draw full column
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4, 0, 0, 27, upperHeight);
+                this.drawTexturedModalRect(this.guiLeft - 26, this.guiTop + 4 + upperHeight, 0, 151, 27, 7);
+                for (int col = 1; col < columns; col++) {
+                    this.drawTexturedModalRect(this.guiLeft - 26 - col * 18, this.guiTop + 4, 0, 0, 25, upperHeight);
+                    this.drawTexturedModalRect(this.guiLeft - 26 - col * 18, this.guiTop + 4 + upperHeight, 0, 151, 25, 7);
+                }
             }
         }
 
@@ -319,10 +327,6 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         return ((ContainerPlayerExpanded) this.inventorySlots).canScroll();
     }
 
-    /**
-     * Returns the number of slot columns to display, between 1 and maxColumns.
-     * Delegates to the container so both sides agree on the layout.
-     */
     private int getColumns() {
         return ((ContainerPlayerExpanded) this.inventorySlots).getColumns();
     }
