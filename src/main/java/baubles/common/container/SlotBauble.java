@@ -80,6 +80,9 @@ public class SlotBauble extends Slot {
 	@Override
 	@SideOnly(Side.CLIENT)
     public IIcon getBackgroundIconIndex() {
+        if (BaubleExpandedSlots.unknownType.equals(slotType)) {
+            return null;
+        }
         return ((ItemDebugger) Baubles.itemDebugger).getBackgroundIconForSlotType(slotType);
     }
 
