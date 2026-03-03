@@ -66,10 +66,9 @@ public class BaublesConfig {
         config.getCategory(categoryOverride).get("defualtSlotTypes").set(currentSlotAssignments);
 
         overrideSlotTypes = config.getStringList("slotTypeOverrides", categoryOverride, overrideSlotTypes,
-            "Slot assignments to use if manualSlotSelection is enabled.\nAny assignments after the first " +
-            BaubleExpandedSlots.slotLimit + " will be ignored.\n!Adding, moving, or removing slots of the "
-            + BaubleExpandedSlots.amuletType + ", " + BaubleExpandedSlots.ringType + ", or " + BaubleExpandedSlots.beltType +
-            " types will reduce compatibility with mods made for original Baubles versions!\n",
+            "Slot assignments to use if manualSlotSelection is enabled.\n!Adding, moving, or removing slots of the "
+                + BaubleExpandedSlots.amuletType + ", " + BaubleExpandedSlots.ringType + ", or " + BaubleExpandedSlots.beltType +
+                " types will reduce compatibility with mods made for original Baubles versions!\n",
             currentlyRegisteredTypes.toArray(new String[0])
         );
 
