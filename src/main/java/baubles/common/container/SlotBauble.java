@@ -5,6 +5,7 @@ import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.Baubles;
+import baubles.common.BaublesConfig;
 import baubles.common.ItemDebugger;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -77,10 +78,10 @@ public class SlotBauble extends Slot {
         return 1;
     }
 
-	@Override
+    @Override
 	@SideOnly(Side.CLIENT)
     public IIcon getBackgroundIconIndex() {
-        if (BaubleExpandedSlots.unknownType.equals(slotType)) {
+        if (!BaublesConfig.useOldGuiRendering && BaubleExpandedSlots.unknownType.equals(slotType)) {
             return null;
         }
         return ((ItemDebugger) Baubles.itemDebugger).getBackgroundIconForSlotType(slotType);

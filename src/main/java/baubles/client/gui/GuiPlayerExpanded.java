@@ -187,7 +187,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
 
         // Bauble slot backgrounds
-        this.mc.getTextureManager().bindTexture(gui_background);
+        this.mc.getTextureManager().bindTexture(useOldGuiRendering ? background : gui_background);
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
             if (!BaublesConfig.showUnusedSlots && slotType.equals(BaubleExpandedSlots.unknownType)) {
@@ -197,18 +197,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             if (useOldGuiRendering) {
                 int x = slotStartX + (slotOffset * (slotIndex / 4));
                 int y = slotStartY + (slotOffset * (slotIndex % 4));
-                if (isUnusedSlot) {
-                    drawTexturedModalRect(
-                        x - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_X,
-                        y - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_Y,
-                        UNUSED_SLOT_U,
-                        UNUSED_SLOT_V,
-                        UNUSED_SLOT_SIZE,
-                        UNUSED_SLOT_SIZE
-                    );
-                } else {
-                    drawTexturedModalRect(x, y, 200, 0, 18, 18);
-                }
+                drawTexturedModalRect(x, y, 200, 0, 18, 18);
             } else {
                 // Draw the background rect at the slot's actual display position so it
                 // automatically follows scrolling and stays in sync with the item rendering.
