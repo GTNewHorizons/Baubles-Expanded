@@ -52,6 +52,12 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private static final ResourceLocation creative_inventory_tabs = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
 
     private static final boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
+    private static final int UNUSED_SLOT_U = 7;
+    private static final int UNUSED_SLOT_V = 160;
+    private static final int UNUSED_SLOT_SIZE = 24;
+    private static final int UNUSED_SLOT_OFFSET = (UNUSED_SLOT_SIZE - 18) / 2;
+    private static final int UNUSED_SLOT_SHIFT_X = 2;
+    private static final int UNUSED_SLOT_SHIFT_Y = 2;
 
 	/**
      * x size of the inventory window in pixels. Defined as float, passed as int.
@@ -181,13 +187,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
 
         // Bauble slot backgrounds
+        this.mc.getTextureManager().bindTexture(useOldGuiRendering ? background : gui_background);
         for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
             if (!BaublesConfig.showUnusedSlots && slotType.equals(BaubleExpandedSlots.unknownType)) {
                 continue;
             }
+            boolean isUnusedSlot = slotType.equals(BaubleExpandedSlots.unknownType);
             if (useOldGuiRendering) {
-                drawTexturedModalRect(slotStartX + (slotOffset * (slotIndex / 4)), slotStartY + (slotOffset * (slotIndex % 4)), 200, 0, 18, 18);
+                int x = slotStartX + (slotOffset * (slotIndex / 4));
+                int y = slotStartY + (slotOffset * (slotIndex % 4));
+                drawTexturedModalRect(x, y, 200, 0, 18, 18);
             } else {
                 // Draw the background rect at the slot's actual display position so it
                 // automatically follows scrolling and stays in sync with the item rendering.
@@ -195,7 +205,51 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 if (baubleSlot == null || baubleSlot.yDisplayPosition == -2000) {
                     continue;
                 }
-                drawTexturedModalRect(guiLeft + baubleSlot.xDisplayPosition, guiTop + baubleSlot.yDisplayPosition, 200, 0, 18, 18);
+                int x = guiLeft + baubleSlot.xDisplayPosition;
+                int y = guiTop + baubleSlot.yDisplayPosition;
+                if (isUnusedSlot) {
+                    drawTexturedModalRect(
+                        x - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_X,
+                        y - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_Y,
+                        UNUSED_SLOT_U,
+                        UNUSED_SLOT_V,
+                        UNUSED_SLOT_SIZE,
+                        UNUSED_SLOT_SIZE
+                    );
+                } else {
+                    drawTexturedModalRect(x, y, 200, 0, 18, 18);
+                }
+            }
+        }
+
+        if (!useOldGuiRendering) {
+            int activeSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+            int totalRows = (activeSlots + columns - 1) / columns;
+            int renderedCells = totalRows * columns;
+            int slotRowOffset = 0;
+            if (needsScrollBars()) {
+                int shownRows = 8;
+                slotRowOffset = (int) (this.currentScroll * (totalRows - shownRows) + 0.5F);
+                if (slotRowOffset < 0) {
+                    slotRowOffset = 0;
+                }
+            }
+            for (int slotIndex = activeSlots; slotIndex < renderedCells; slotIndex++) {
+                int row = slotIndex / columns;
+                int scrolledRow = row - slotRowOffset;
+                int y = guiTop + 12 + (slotOffset * scrolledRow);
+                if (y < guiTop + 12 || y > guiTop + 8 * 18) {
+                    continue;
+                }
+                int x = guiLeft - 18 - (18 * (slotIndex % columns));
+                drawTexturedModalRect(
+                    x - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_X,
+                    y - UNUSED_SLOT_OFFSET + UNUSED_SLOT_SHIFT_Y,
+                    UNUSED_SLOT_U,
+                    UNUSED_SLOT_V,
+                    UNUSED_SLOT_SIZE,
+                    UNUSED_SLOT_SIZE
+                );
             }
         }
     }
