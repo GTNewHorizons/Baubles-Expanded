@@ -46,7 +46,7 @@ public class BaublesConfig {
 
         //categoryClient
         useOldGuiButton = config.getBoolean("useOldGuiButton", categoryClient, useOldGuiButton, "Use the old Baubles Button texture and location instead.\n");
-        useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\nUsing over 20 slots in old rendering is not supported.\n");
+        useOldGuiRendering = config.getBoolean("useOldRendering", categoryClient, useOldGuiRendering, "Display the old Bauble GUI instead of the new sidebar.\nUsing old rendering with more than 20 slots works, but results in visual oddities and is not supported.\n");
         maxColumns = config.getInt("maxColumns", categoryClient, 4, 1, Integer.MAX_VALUE, "Maximum number of columns shown in the baubles inventory.\n"
         );
 
