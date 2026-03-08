@@ -83,12 +83,12 @@ public class ContainerPlayerExpanded extends Container {
 
         // Bauble slots
         baubleFirstSlotIndex = slotsAdded;
-        for (i = 0; i < BaubleExpandedSlots.slotLimit; i++) {
-            String slotType = BaubleExpandedSlots.getSlotType(i);
+        String[] currentSlotAssignments = BaubleExpandedSlots.getCurrentSlotAssignments();
+        for (String slotType: currentSlotAssignments) {
             if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
                 Slot slot = useOldGuiRendering
-                    ? new SlotBauble(baubles, slotType, i, slotStartX + (slotOffset * (i / 4)), slotStartY + (slotOffset * (i % 4)))
-                    : new SlotBauble(baubles, slotType, i, -18 - (18 * (i % getColumns())), 12 + (slotOffset * (i / getColumns())));
+                    ? new SlotBauble(baubles, slotType, baubleSlotCount, slotStartX + (slotOffset * (baubleSlotCount / 4)), slotStartY + (slotOffset * (baubleSlotCount % 4)))
+                    : new SlotBauble(baubles, slotType, baubleSlotCount, -18 - (18 * (baubleSlotCount % getColumns())), 12 + (slotOffset * (baubleSlotCount / getColumns())));
                 addSlotToContainer(slot);
                 baubleSlotCount++;
             }
@@ -172,7 +172,7 @@ public class ContainerPlayerExpanded extends Container {
             slotRowOffset = 0;
         }
 
-        for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotLimit; i++) {
+        for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotsCurrentlyUsed(); i++) {
             Slot slot = (Slot) this.inventorySlots.get(baubleFirstSlotIndex + i);
             int row = i / columns;
             int scrolledRow = row - slotRowOffset;
