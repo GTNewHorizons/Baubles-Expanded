@@ -188,7 +188,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
         // Bauble slot backgrounds
         this.mc.getTextureManager().bindTexture(useOldGuiRendering ? background : gui_background);
-        for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotLimit; slotIndex++) {
+        for (int slotIndex = 0; slotIndex < BaubleExpandedSlots.slotsCurrentlyUsed(); slotIndex++) {
             String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
             if (!BaublesConfig.showUnusedSlots && slotType.equals(BaubleExpandedSlots.unknownType)) {
                 continue;
