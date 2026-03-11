@@ -26,6 +26,10 @@ public class PlayerHandler {
 		playerBaublesClient.clear();
 	}
 
+    public static void clearClientPlayerBaubles(EntityPlayer player) {
+        playerBaublesClient.remove(player.getCommandSenderName());
+    }
+
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
 		if (player.worldObj.isRemote) {
 			return playerBaublesClient.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
