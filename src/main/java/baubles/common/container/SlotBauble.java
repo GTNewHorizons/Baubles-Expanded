@@ -75,7 +75,7 @@ public class SlotBauble extends Slot {
 
 	@Override
     public int getSlotStackLimit() {
-        return 1;
+        return BaublesConfig.getStackLimitForSlotType(slotType);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package baubles.common;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import baubles.api.expanded.BaubleExpandedSlots;
 import net.minecraftforge.common.config.Configuration;
@@ -17,6 +19,8 @@ public class BaublesConfig {
     public static boolean showUnusedSlots = false;
     public static boolean manualSlotSelection = false;
     public static boolean displayTooltipOnHover = true;
+    public static String[] slotStackLimitOverrides = new String[] {};
+    private static final Map<String, Integer> stackLimitsByType = new HashMap<>();
 
     public static String[] overrideSlotTypes = new String[] {
         BaubleExpandedSlots.amuletType,
@@ -71,6 +75,27 @@ public class BaublesConfig {
                 " types will reduce compatibility with mods made for original Baubles versions!\n",
             currentlyRegisteredTypes.toArray(new String[0])
         );
+        slotStackLimitOverrides = config.getStringList("slotStackLimitOverrides", categoryOverride, slotStackLimitOverrides,
+            "Per-slot-type stack limits in the format \"type=limit\" (example: heartcanister_red=10).\n"
+                + "Unspecified types default to a stack limit of 1.\n",
+            currentlyRegisteredTypes.stream().map(type -> type + "=1").toArray(String[]::new)
+        );
+
+        stackLimitsByType.clear();
+        for (String entry : slotStackLimitOverrides) {
+            if (entry == null) continue;
+            String[] split = entry.split("=", 2);
+            if (split.length != 2) continue;
+            String type = split[0].trim();
+            String limitText = split[1].trim();
+            if (!BaubleExpandedSlots.isTypeRegistered(type)) continue;
+            try {
+                int limit = Integer.parseInt(limitText);
+                if (limit > 0) {
+                    stackLimitsByType.put(type, limit);
+                }
+            } catch (NumberFormatException ignored) {}
+        }
 
         if(manualSlotSelection) {
             BaubleExpandedSlots.overrideSlots(overrideSlotTypes);
@@ -79,6 +104,11 @@ public class BaublesConfig {
         if(config.hasChanged()) {
             config.save();
         }
+    }
+
+    public static int getStackLimitForSlotType(String type) {
+        if (type == null) return 1;
+        return stackLimitsByType.getOrDefault(type, 1);
     }
 
 }
