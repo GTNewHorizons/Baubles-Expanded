@@ -63,12 +63,16 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
 		if (world == null) return null;
 		Entity e = world.getEntityByID(message.playerId);
 		if (e instanceof EntityPlayer player) {
-            PlayerHandler.clearClientPlayerBaubles(player);
+            PlayerHandler.clearPlayerBaubles(player);
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
             message.inventory.forEachEntry((a, b) -> {
                 baubles.stackList[a] = b;
                 if (b.getItem() instanceof IBauble itemBauble) {
-                    itemBauble.onPlayerLoad(b, player);
+                    try {
+                        itemBauble.onPlayerLoad(b, player);
+                    } catch (Exception ex) {
+                        Baubles.log.error("Error loading baubles {}", b, ex);
+                    }
                 }
                 return true;
             });

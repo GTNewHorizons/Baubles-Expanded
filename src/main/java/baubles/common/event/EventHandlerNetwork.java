@@ -13,22 +13,16 @@ import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
 
 public class EventHandlerNetwork {
 
 	@SubscribeEvent
 	public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)    {
 		Side side = FMLCommonHandler.instance().getEffectiveSide();
-		if (side == Side.SERVER)        {
+		if (side == Side.SERVER) {
 			// Apply all baubles
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(event.player);
-            PacketHandler.INSTANCE.sendToAll(new PacketSyncAllBauble(event.player));
-            for (Object o : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
-                if (o == event.player) continue;
-                EntityPlayerMP player = (EntityPlayerMP) o;
-                PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(player), (EntityPlayerMP) event.player);
-            }
+            PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(event.player), ((EntityPlayerMP) event.player));
 			for (int i = 0; i < baubles.getSizeInventory(); i++) {
 				ItemStack stack = baubles.getStackInSlot(i);
 				if (stack != null && stack.getItem() instanceof IBauble itemBauble) {

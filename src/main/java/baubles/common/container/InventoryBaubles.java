@@ -7,13 +7,13 @@ import baubles.api.BaubleType;
 import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
-import baubles.common.Baubles;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncBauble;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
@@ -296,8 +296,8 @@ public class InventoryBaubles implements IInventory {
     public void syncSlotToClients(int slot) {
         try {
             EntityPlayer entityPlayer = player.get();
-            if (entityPlayer != null && !entityPlayer.worldObj.isRemote) {
-                PacketHandler.INSTANCE.sendToAll(new PacketSyncBauble(player.get(), slot));
+            if (entityPlayer instanceof EntityPlayerMP playerMP && !entityPlayer.worldObj.isRemote) {
+                PacketHandler.sendToTracking(new PacketSyncBauble(playerMP, slot), playerMP, true);
             }
         } catch (Exception e) {
             e.printStackTrace();
