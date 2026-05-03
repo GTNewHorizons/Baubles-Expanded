@@ -3,6 +3,7 @@ package baubles.common.lib;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 
 import com.google.common.io.Files;
@@ -12,19 +13,60 @@ import baubles.common.container.InventoryBaubles;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
 
 public class PlayerHandler {
 
-	private static HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
-	private static HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
+	private static final HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
+	private static final HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
-		playerBaublesServer.remove(player.getCommandSenderName());
+        clearPlayerBaubles(player.getCommandSenderName(), player.worldObj.isRemote);
 	}
 
 	public static void clearClientPlayerBaubles() {
 		playerBaublesClient.clear();
 	}
+
+    public static void pruneServerSide() {
+        baublesPrune(playerBaublesServer, false);
+    }
+
+    public static void pruneClientSide() {
+        baublesPrune(playerBaublesClient, true);
+    }
+
+    private static void baublesPrune(HashMap<String, InventoryBaubles> map, boolean isClient) {
+        for (var iter = map.entrySet().iterator(); iter.hasNext(); ) {
+            var e = iter.next();
+            String playerName = e.getKey();
+            InventoryBaubles baubles = e.getValue();
+            EntityPlayer player = baubles.player.get();
+            if (player != null && !player.isDead) continue;
+            EntityPlayer newPlayer = null;
+            if (isClient) {
+                for (Object o : Baubles.proxy.getClientWorld().playerEntities) {
+                    EntityPlayer playerEntity = (EntityPlayer) o;
+                    if (playerEntity.getCommandSenderName().equals(playerName)) {
+                        newPlayer = playerEntity;
+                        break;
+                    }
+                }
+            } else {
+                newPlayer = MinecraftServer.getServer().getConfigurationManager().func_152612_a(playerName);
+            }
+            if (newPlayer != null) {
+                baubles.player = new WeakReference<>(newPlayer);
+                continue;
+            }
+            iter.remove();
+        }
+    }
+
+    public static void clearPlayerBaubles(String playerName, boolean isClient) {
+        HashMap<String, InventoryBaubles> map = isClient ? playerBaublesClient : playerBaublesServer;
+        map.remove(playerName);
+    }
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
 		if (player.worldObj.isRemote) {

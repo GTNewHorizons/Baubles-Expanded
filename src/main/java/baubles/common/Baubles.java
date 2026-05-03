@@ -8,6 +8,7 @@ import cpw.mods.fml.common.Loader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import baubles.common.event.EventHandlerCleanup;
 import baubles.common.event.EventHandlerEntity;
 import baubles.common.event.EventHandlerNetwork;
 import baubles.common.network.PacketHandler;
@@ -38,6 +39,7 @@ public class Baubles {
 
     public EventHandlerEntity entityEventHandler;
     public EventHandlerNetwork entityEventNetwork;
+    public EventHandlerCleanup cleanupEventHandler;
 
     public static final Logger log = LogManager.getLogger("Baubles");
     public static final int GUI = 0;
@@ -52,9 +54,11 @@ public class Baubles {
 
         entityEventHandler = new EventHandlerEntity();
         entityEventNetwork = new EventHandlerNetwork();
+        cleanupEventHandler = new EventHandlerCleanup();
 
         MinecraftForge.EVENT_BUS.register(entityEventHandler);
         FMLCommonHandler.instance().bus().register(entityEventNetwork);
+        FMLCommonHandler.instance().bus().register(cleanupEventHandler);
         proxy.registerHandlers();
     }
 
