@@ -499,6 +499,17 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     }
 
     private boolean isClickInUI(int mouseX, int mouseY) {
+        ContainerPlayerExpanded expandedInventory = (ContainerPlayerExpanded) this.inventorySlots;
+        for (int slotIndex = 0; slotIndex < expandedInventory.getBaubleSlotCount(); slotIndex++) {
+            SlotBauble baubleSlot = expandedInventory.getBaubleSlot(slotIndex);
+            if (baubleSlot == null || baubleSlot.yDisplayPosition == -2000) {
+                continue;
+            }
+            if (this.func_146978_c(baubleSlot.xDisplayPosition, baubleSlot.yDisplayPosition, 16, 16, mouseX, mouseY)) {
+                return false;
+            }
+        }
+
         int columns = getColumns();
         int uiYStart = this.guiTop + 4;
         int uiYEnd   = uiYStart + 158;
