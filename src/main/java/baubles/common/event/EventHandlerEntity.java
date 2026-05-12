@@ -13,6 +13,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.WorldEvent;
 
 public class EventHandlerEntity {
 
@@ -98,5 +99,10 @@ public class EventHandlerEntity {
 				getPlayerFile("baub", directory, player.getCommandSenderName()),
 				getPlayerFile("baubback", directory, player.getCommandSenderName()));
 	}
+
+    @SubscribeEvent
+    public void onWorldUnload(WorldEvent.Unload event) {
+        PlayerHandler.onWorldUnload(event.world);
+    }
 
 }
