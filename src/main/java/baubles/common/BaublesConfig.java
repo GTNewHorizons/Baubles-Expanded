@@ -85,7 +85,10 @@ public class BaublesConfig {
         for (String entry : slotStackLimitOverrides) {
             if (entry == null) continue;
             String[] split = entry.split("=", 2);
-            if (split.length != 2) continue;
+            if (split.length != 2) {
+                Baubles.log.warn("Ignoring malformed slotStackLimitOverrides entry '{}'. Expected format: type=limit", entry);
+                continue;
+            }
             String type = split[0].trim();
             String limitText = split[1].trim();
             if (!BaubleExpandedSlots.isTypeRegistered(type)) continue;
