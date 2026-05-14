@@ -7,7 +7,6 @@ import baubles.api.BaubleType;
 import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
-import baubles.common.Baubles;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncBauble;
@@ -295,9 +294,9 @@ public class InventoryBaubles implements IInventory {
 
     public void syncSlotToClients(int slot) {
         try {
-            EntityPlayer entityPlayer = player.get();
-            if (entityPlayer != null && !entityPlayer.worldObj.isRemote) {
-                PacketHandler.INSTANCE.sendToAll(new PacketSyncBauble(player.get(), slot));
+            final EntityPlayer player = this.player.get();
+            if (player != null && !player.worldObj.isRemote) {
+                PacketHandler.INSTANCE.sendToDimension(new PacketSyncBauble(player, slot), player.dimension);
             }
         } catch (Exception e) {
             e.printStackTrace();

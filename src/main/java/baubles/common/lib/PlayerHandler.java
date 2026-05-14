@@ -12,11 +12,12 @@ import baubles.common.container.InventoryBaubles;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 
 public class PlayerHandler {
 
-	private static HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
-	private static HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
+	private static final HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
+	private static final HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
 		playerBaublesServer.remove(player.getCommandSenderName());
@@ -25,6 +26,19 @@ public class PlayerHandler {
 	public static void clearClientPlayerBaubles() {
 		playerBaublesClient.clear();
 	}
+
+    public static void clearServerPlayerBaubles() {
+        playerBaublesServer.clear();
+    }
+
+    public static void onWorldUnload(World world) {
+        if (world.isRemote) {
+            playerBaublesClient.values().removeIf(inv -> {
+                final EntityPlayer player = inv.player.get();
+                return player == null || player.worldObj == world;
+            });
+        }
+    }
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
 		if (player.worldObj.isRemote) {
