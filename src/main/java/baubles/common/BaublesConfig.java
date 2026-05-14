@@ -91,13 +91,18 @@ public class BaublesConfig {
             }
             String type = split[0].trim();
             String limitText = split[1].trim();
-            if (!BaubleExpandedSlots.isTypeRegistered(type)) continue;
+            if (!BaubleExpandedSlots.isTypeRegistered(type)) {
+                Baubles.log.warn("Ignoring slotStackLimitOverrides entry '{}': unknown slot type '{}'", entry, type);
+                continue;
+            }
             try {
                 int limit = Integer.parseInt(limitText);
                 if (limit > 0) {
                     stackLimitsByType.put(type, limit);
                 }
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+                Baubles.log.warn("Ignoring slotStackLimitOverrides entry '{}': '{}' is not a valid integer", entry, limitText);
+            }
         }
 
         if(manualSlotSelection) {
