@@ -3,8 +3,10 @@ package baubles.common;
 import java.io.File;
 
 import baubles.Tags;
+import baubles.common.lib.PlayerHandler;
 import codechicken.nei.api.API;
 import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,6 +75,11 @@ public class Baubles {
           if (BaublesConfig.hideDebugItem && Loader.isModLoaded("NotEnoughItems")){
               API.hideItem("bauble_slot_debug_tool");
           }
+    }
+
+    @Mod.EventHandler
+    public void onServerStopped(FMLServerStoppedEvent event) {
+        PlayerHandler.clearServerPlayerBaubles();
     }
 
 }

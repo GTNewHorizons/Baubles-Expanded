@@ -12,6 +12,7 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import baubles.common.network.PacketSyncBauble;
 import net.minecraft.item.ItemStack;
 
 public class EventHandlerNetwork {
@@ -34,6 +35,13 @@ public class EventHandlerNetwork {
 	}
 
     @SubscribeEvent
+    public void playerChangedDim(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.player instanceof EntityPlayerMP playerMP) {
+            PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(playerMP), playerMP);
+        }
+    }
+
+    @SubscribeEvent
     public void onConnectedToServer(FMLNetworkEvent.ClientConnectedToServerEvent event) {
         // clear old cache
         PlayerHandler.clearClientPlayerBaubles();
@@ -41,10 +49,9 @@ public class EventHandlerNetwork {
 
 	public static void syncBaubles(EntityPlayer player) {
         InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
-		for (int i = 0; i < baubles.getSizeInventory(); i++) {
-			baubles.syncSlotToClients(i);
-		}
-	}
-
+        for (int i = 0; i < baubles.getSizeInventory(); i++) {
+            baubles.syncSlotToClients(i);
+        }
+    }
 
 }

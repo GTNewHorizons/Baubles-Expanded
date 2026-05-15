@@ -14,6 +14,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.World;
 
 public class PlayerHandler {
 
@@ -66,6 +67,19 @@ public class PlayerHandler {
     public static void clearPlayerBaubles(String playerName, boolean isClient) {
         HashMap<String, InventoryBaubles> map = isClient ? playerBaublesClient : playerBaublesServer;
         map.remove(playerName);
+    }
+
+    public static void clearServerPlayerBaubles() {
+        playerBaublesServer.clear();
+    }
+
+    public static void onWorldUnload(World world) {
+        if (world.isRemote) {
+            playerBaublesClient.values().removeIf(inv -> {
+                final EntityPlayer player = inv.player.get();
+                return player == null || player.worldObj == world;
+            });
+        }
     }
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
