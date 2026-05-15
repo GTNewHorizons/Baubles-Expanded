@@ -36,6 +36,10 @@ public class SlotBauble extends Slot {
         }
     }
 
+    public String getSlotType() {
+        return slotType;
+    }
+
     /**
      * Check if the stack is a valid item for this slot. Always true beside for the armor slots.
      */
@@ -59,7 +63,7 @@ public class SlotBauble extends Slot {
         }
 
         for(String type : types) {
-            if(type.equals(BaubleExpandedSlots.universalType) || type.equals(slotType)) {
+            if (BaublesConfig.canTypeFitSlot(type, slotType)) {
                 return true;
             }
         }
