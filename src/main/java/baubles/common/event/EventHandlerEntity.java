@@ -9,8 +9,11 @@ import baubles.api.IBauble;
 import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
 import baubles.common.lib.PlayerHandler;
+import baubles.common.network.PacketHandler;
+import baubles.common.network.PacketSyncAllBauble;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -105,4 +108,11 @@ public class EventHandlerEntity {
         PlayerHandler.onWorldUnload(event.world);
     }
 
+    @SubscribeEvent
+    public void startTracking(PlayerEvent.StartTracking event) {
+        // no need to check for isRemote: this event is server only
+        if (event.target instanceof EntityPlayer otherPlayer) {
+            PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(otherPlayer), ((EntityPlayerMP) event.entityPlayer));
+        }
+    }
 }

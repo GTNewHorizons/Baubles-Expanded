@@ -6,9 +6,14 @@ import java.util.Arrays;
 import baubles.api.BaubleType;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.LoaderState;
+import cpw.mods.fml.common.network.ByteBufUtils;
 
 public class BaubleExpandedSlots {
 
+	//The total number of slots that can be added.
+	//Please keep in mind that increases to this limit are possible with minimal changes.
+	public static final int slotLimit = 20;
+	public static final int maxSlotIdBytes = ByteBufUtils.varIntByteCount(slotLimit);
     //The type used in place of null.
     public static final String invalidType = "";
 

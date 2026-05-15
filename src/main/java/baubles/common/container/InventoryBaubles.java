@@ -13,6 +13,7 @@ import baubles.common.network.PacketSyncBauble;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
@@ -294,9 +295,9 @@ public class InventoryBaubles implements IInventory {
 
     public void syncSlotToClients(int slot) {
         try {
-            final EntityPlayer player = this.player.get();
-            if (player != null && !player.worldObj.isRemote) {
-                PacketHandler.INSTANCE.sendToDimension(new PacketSyncBauble(player, slot), player.dimension);
+            final EntityPlayer entityPlayer = this.player.get();
+            if (entityPlayer instanceof EntityPlayerMP playerMP && !entityPlayer.worldObj.isRemote) {
+                PacketHandler.sendToTracking(new PacketSyncBauble(playerMP, slot), playerMP, true);
             }
         } catch (Exception e) {
             e.printStackTrace();
