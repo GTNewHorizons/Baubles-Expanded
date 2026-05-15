@@ -7,6 +7,7 @@ import baubles.api.BaubleType;
 import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
+import baubles.common.BaublesConfig;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncBauble;
@@ -210,7 +211,7 @@ public class InventoryBaubles implements IInventory {
         }
 
         for(String type : types) {
-            if(type.equals(BaubleExpandedSlots.universalType) || type.equals(slotType)) {
+            if (BaublesConfig.canTypeFitSlot(type, slotType)) {
                 return true;
             }
         }
