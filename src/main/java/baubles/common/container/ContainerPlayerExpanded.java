@@ -298,6 +298,22 @@ public class ContainerPlayerExpanded extends Container {
     }
 
     private void tryMergeIntoBaubleSlotsByPriority(ItemStack sourceStack, int baubleStart, int baubleEnd, String[] itemTypes, int priority) {
+        // First pass: merge into occupied, compatible bauble slots.
+        for (int baubleSlot = baubleStart; baubleSlot < baubleEnd && sourceStack.stackSize > 0; baubleSlot++) {
+            Slot targetInventorySlot = (Slot) inventorySlots.get(baubleSlot);
+            if (!targetInventorySlot.getHasStack()) {
+                continue;
+            }
+            String targetSlotType = targetInventorySlot instanceof SlotBauble
+                ? ((SlotBauble) targetInventorySlot).getSlotType()
+                : BaubleExpandedSlots.unknownType;
+            if (getBestMatchPriority(itemTypes, targetSlotType) != priority) {
+                continue;
+            }
+            mergeItemStack(sourceStack, baubleSlot, baubleSlot + 1, false);
+        }
+
+        // Second pass: place remaining items into empty, compatible bauble slots.
         for (int baubleSlot = baubleStart; baubleSlot < baubleEnd && sourceStack.stackSize > 0; baubleSlot++) {
             Slot targetInventorySlot = (Slot) inventorySlots.get(baubleSlot);
             if (targetInventorySlot.getHasStack()) {
