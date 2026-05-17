@@ -333,7 +333,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
             tooltipIndexCache = slotIndex;
 
-            String slotType = BaubleExpandedSlots.getSlotType(slotIndex);
+            String slotType = slot instanceof SlotBauble ? ((SlotBauble) slot).getSlotType() : BaubleExpandedSlots.unknownType;
 
             tooltipCache.clear();
 
@@ -348,7 +348,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 if (heldItem.getItem() instanceof IBaubleExpanded baubleExpandedItem) {
                     String[] itemBaubleTypes = baubleExpandedItem.getBaubleTypes(heldItem);
                     for(String itemBaubleType : itemBaubleTypes) {
-                        if (itemBaubleType.equals(BaubleExpandedSlots.universalType) || slotType.equals(itemBaubleType)) {
+                        if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
                             fitsInSlot = true;
                             break;
                         }
@@ -356,7 +356,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 }
                 else if(heldItem.getItem() instanceof IBauble baubleItem) {
                     String itemBaubleType = BaubleExpandedSlots.getTypeFromBaubleType(baubleItem.getBaubleType(heldItem));
-                    if (itemBaubleType.equals(BaubleExpandedSlots.universalType) || slotType.equals(itemBaubleType)) {
+                    if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
                         fitsInSlot = true;
                     }
                 }

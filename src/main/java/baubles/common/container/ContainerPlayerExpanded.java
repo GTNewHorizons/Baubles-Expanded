@@ -247,26 +247,16 @@ public class ContainerPlayerExpanded extends Container {
                 returnStack = null;
             }
         } else if (item instanceof IBauble bauble && bauble.canEquip(returnStack, thePlayer)) {
-            for (int baubleSlot = baubleStart; baubleSlot < baubleEnd; baubleSlot++) {
-                if (returnStack == null) {
-                    break;
-                }
-                if (((Slot) inventorySlots.get(baubleSlot)).getHasStack()) {
-                    continue;
-                }
-                String[] types;
-                if (item instanceof IBaubleExpanded) {
-                    types = ((IBaubleExpanded) item).getBaubleTypes(returnStack);
-                } else {
-                    types = new String[] {BaubleExpandedSlots.getTypeFromBaubleType(bauble.getBaubleType(returnStack))};
-                }
-                for (String type : types) {
-                    if ((type.equals(BaubleExpandedSlots.universalType)
-                        || type.equals(BaubleExpandedSlots.getSlotType(baubleSlot - baubleStart)))
-                        && !mergeItemStack(originalStack, baubleSlot, baubleSlot + 1, false)) {
-                        returnStack = null;
-                    }
-                }
+            String[] types = item instanceof IBaubleExpanded
+                ? ((IBaubleExpanded) item).getBaubleTypes(returnStack)
+                : new String[] {BaubleExpandedSlots.getTypeFromBaubleType(bauble.getBaubleType(returnStack))};
+
+            // Priority 2: direct slot matches (or universal items)
+            tryMergeIntoBaubleSlotsByPriority(originalStack, baubleStart, baubleEnd, types, 2);
+
+            // Priority 1: override matches (e.g. amulet/ring/belt into universal)
+            if (originalStack.stackSize > 0) {
+                tryMergeIntoBaubleSlotsByPriority(originalStack, baubleStart, baubleEnd, types, 1);
             }
         } else if (slotIndex >= baubleEnd && slotIndex < invEnd) {
             if (!mergeItemStack(originalStack, invEnd, hotbarEnd, false)) {
@@ -305,6 +295,54 @@ public class ContainerPlayerExpanded extends Container {
     public void putStacksInSlots(ItemStack[] p_75131_1_) {
         baubles.blockEvents=true;
         super.putStacksInSlots(p_75131_1_);
+    }
+
+    private void tryMergeIntoBaubleSlotsByPriority(ItemStack sourceStack, int baubleStart, int baubleEnd, String[] itemTypes, int priority) {
+        // First pass: merge into occupied, compatible bauble slots.
+        for (int baubleSlot = baubleStart; baubleSlot < baubleEnd && sourceStack.stackSize > 0; baubleSlot++) {
+            Slot targetInventorySlot = (Slot) inventorySlots.get(baubleSlot);
+            if (!targetInventorySlot.getHasStack()) {
+                continue;
+            }
+            String targetSlotType = targetInventorySlot instanceof SlotBauble
+                ? ((SlotBauble) targetInventorySlot).getSlotType()
+                : BaubleExpandedSlots.unknownType;
+            if (getBestMatchPriority(itemTypes, targetSlotType) != priority) {
+                continue;
+            }
+            mergeItemStack(sourceStack, baubleSlot, baubleSlot + 1, false);
+        }
+
+        // Second pass: place remaining items into empty, compatible bauble slots.
+        for (int baubleSlot = baubleStart; baubleSlot < baubleEnd && sourceStack.stackSize > 0; baubleSlot++) {
+            Slot targetInventorySlot = (Slot) inventorySlots.get(baubleSlot);
+            if (targetInventorySlot.getHasStack()) {
+                continue;
+            }
+            String targetSlotType = targetInventorySlot instanceof SlotBauble
+                ? ((SlotBauble) targetInventorySlot).getSlotType()
+                : BaubleExpandedSlots.unknownType;
+            if (getBestMatchPriority(itemTypes, targetSlotType) != priority) {
+                continue;
+            }
+            mergeItemStack(sourceStack, baubleSlot, baubleSlot + 1, false);
+        }
+    }
+
+    private int getBestMatchPriority(String[] itemTypes, String slotType) {
+        int best = 0;
+        for (String type : itemTypes) {
+            if (type == null) {
+                continue;
+            }
+            if (type.equals(BaubleExpandedSlots.universalType) || type.equals(slotType)) {
+                return 2;
+            }
+            if (BaublesConfig.canTypeFitSlot(type, slotType)) {
+                best = 1;
+            }
+        }
+        return best;
     }
 
     protected boolean mergeItemStack(ItemStack sourceStack, int startIndex, int endIndex, boolean reverse, Slot sourceSlot) {

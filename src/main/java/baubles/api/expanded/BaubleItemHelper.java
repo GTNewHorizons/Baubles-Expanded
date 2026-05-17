@@ -1,6 +1,7 @@
 package baubles.api.expanded;
 
 import baubles.api.BaublesApi;
+import baubles.common.BaublesConfig;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.gui.GuiScreen;
@@ -26,9 +27,10 @@ public class BaubleItemHelper {
         boolean shiftHeld = GuiScreen.isShiftKeyDown();
         if(shiftHeld) {
             tooltip.add(StatCollector.translateToLocal("tooltip.compatibleslots"));
-            for(int i = 0; i < types.length; i++) {
-                String type = StatCollector.translateToLocal("slot." + types[i]);
-                if(i < types.length - 1) type += ",";
+            String[] displayTypes = BaublesConfig.getDisplayTypesWithUniversalOverrides(types);
+            for(int i = 0; i < displayTypes.length; i++) {
+                String type = StatCollector.translateToLocal("slot." + displayTypes[i]);
+                if(i < displayTypes.length - 1) type += ",";
                 tooltip.add(type);
             }
         } else {
