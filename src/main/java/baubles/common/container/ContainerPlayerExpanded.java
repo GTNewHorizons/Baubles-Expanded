@@ -129,6 +129,11 @@ public class ContainerPlayerExpanded extends Container {
     @Override
     public void onContainerClosed(EntityPlayer player) {
         super.onContainerClosed(player);
+
+        if (baubles != null && baubles.getEventHandler() == this) {
+            baubles.setEventHandler(null);
+        }
+
         if (useOldGuiRendering) {
             return;
         }

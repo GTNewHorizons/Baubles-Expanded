@@ -21,26 +21,19 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 	int slot;
 	int playerId;
 	ItemStack bauble = null;
-	boolean initial;
 
 	public PacketSyncBauble() {}
 
 	public PacketSyncBauble(EntityPlayer player, int slot) {
-		this(player, slot, false);
-	}
-
-	public PacketSyncBauble(EntityPlayer player, int slot, boolean reset) {
 		this.slot = slot;
 		this.bauble = PlayerHandler.getPlayerBaubles(player).getStackInSlot(slot);
 		this.playerId = player.getEntityId();
-		this.initial = reset;
 	}
 
 	@Override
 	public void toBytes(ByteBuf buffer) {
 		buffer.writeByte(slot);
 		buffer.writeInt(playerId);
-		buffer.writeBoolean(initial);
 		PacketBuffer pb = new PacketBuffer(buffer);
 		try { pb.writeItemStackToBuffer(bauble); } catch (IOException ignored) {}
 	}
@@ -49,7 +42,6 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 	public void fromBytes(ByteBuf buffer) {
 		slot = buffer.readByte();
 		playerId = buffer.readInt();
-		initial = buffer.readBoolean();
 		PacketBuffer pb = new PacketBuffer(buffer);
 		try { bauble = pb.readItemStackFromBuffer(); } catch (IOException ignored) {}
 	}
@@ -60,20 +52,7 @@ public class PacketSyncBauble implements IMessage, IMessageHandler<PacketSyncBau
 		if (world == null) return null;
 		Entity e = world.getEntityByID(message.playerId);
 		if (e instanceof EntityPlayer player) {
-			InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
-			if (message.initial) {
-				if (message.slot == 0) {
-					PlayerHandler.clearClientPlayerBaubles();
-					baubles = PlayerHandler.getPlayerBaubles(player);
-				}
-				baubles.stackList[message.slot] = message.bauble;
-				if (message.bauble != null && message.bauble.getItem() instanceof IBauble itemBauble) {
-					itemBauble.onPlayerLoad(message.bauble, player);
-				}
-			}
-			else {
-				baubles.setInventorySlotContents(message.slot, message.bauble);
-			}
+            PlayerHandler.getPlayerBaubles(player).setInventorySlotContents(message.slot, message.bauble);
 		}
 		return null;
 	}
