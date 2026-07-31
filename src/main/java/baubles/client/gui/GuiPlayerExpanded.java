@@ -113,9 +113,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
      */
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        super.drawScreen(mouseX, mouseY, partialTicks);
         xSizeFloat = (float) mouseX;
         ySizeFloat = (float) mouseY;
+        super.drawScreen(mouseX, mouseY, partialTicks);
 
         if(BaublesConfig.displayTooltipOnHover) {
             handleMouseHover(mouseX, mouseY);
