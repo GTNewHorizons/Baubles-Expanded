@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.client.gui.inventory.GuiInventory;
 
-final class GuiInventoryAccessor {
+final class GuiInventoryReflectionHelper {
 
     private static final Field MOUSE_X = ReflectionHelper.findField(
         GuiInventory.class,
@@ -16,7 +16,7 @@ final class GuiInventoryAccessor {
         "ySizeFloat",
         "field_147047_v");
 
-    private GuiInventoryAccessor() {}
+    private GuiInventoryReflectionHelper() {}
 
     static void setMousePosition(GuiInventory inventory, float mouseX, float mouseY) {
         try {

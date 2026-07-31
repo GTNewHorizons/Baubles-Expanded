@@ -57,7 +57,7 @@ public class GuiEvents {
 			if (event.button.id == 55) {
 				GuiPlayerExpanded expandedInventory = (GuiPlayerExpanded) event.gui;
 				GuiInventory inventory = new GuiInventory(event.gui.mc.thePlayer);
-				GuiInventoryAccessor.setMousePosition(
+				GuiInventoryReflectionHelper.setMousePosition(
 					inventory,
 					expandedInventory.getMouseX(),
 					expandedInventory.getMouseY());
