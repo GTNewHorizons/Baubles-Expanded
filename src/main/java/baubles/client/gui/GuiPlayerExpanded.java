@@ -124,6 +124,14 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         handleScrollbar(mouseX, mouseY);
     }
 
+    float getMouseX() {
+        return xSizeFloat;
+    }
+
+    float getMouseY() {
+        return ySizeFloat;
+    }
+
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
         if (!useOldGuiRendering) {

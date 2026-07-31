@@ -55,7 +55,13 @@ public class GuiEvents {
 
 		if (event.gui instanceof GuiPlayerExpanded) {
 			if (event.button.id == 55) {
-				event.gui.mc.displayGuiScreen(new GuiInventory(event.gui.mc.thePlayer));
+				GuiPlayerExpanded expandedInventory = (GuiPlayerExpanded) event.gui;
+				GuiInventory inventory = new GuiInventory(event.gui.mc.thePlayer);
+				GuiInventoryAccessor.setMousePosition(
+					inventory,
+					expandedInventory.getMouseX(),
+					expandedInventory.getMouseY());
+				event.gui.mc.displayGuiScreen(inventory);
 				PacketHandler.INSTANCE.sendToServer(new PacketOpenNormalInventory(event.gui.mc.thePlayer));
 			}
 		}
