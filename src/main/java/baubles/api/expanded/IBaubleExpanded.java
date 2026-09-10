@@ -20,10 +20,9 @@ public interface IBaubleExpanded extends IBauble {
 	String[] getBaubleTypes (ItemStack itemstack);
 
 	/**
-	 * Called whenever the contents of the slot holding this item changed, including on equip alongside onEquipped.
-	 * The case no other hook covers is a stack that changes size without leaving the slot, which happens when a
-	 * player merges items into an occupied slot or takes part of a stack out of one, so anything derived from the
-	 * stack size has to be recalculated here. Compare against your own state, this does not tell you what changed.
+	 * Called whenever the slot holding this item changes. Triggers when an item is equipped or when the player
+	 * interacts with the slot changing its stack size, but not when the whole stack is unequipped.
+	 * Interactions with InventoryBaubles from code never trigger this.
 	 */
 	default void onSlotContentsChanged (ItemStack itemstack, EntityLivingBase player) {}
 
