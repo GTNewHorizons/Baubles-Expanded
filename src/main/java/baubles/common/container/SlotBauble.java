@@ -76,12 +76,13 @@ public class SlotBauble extends Slot {
 		super.onSlotChanged();
 
 		ItemStack stack = getStack();
-		if (stack == null || !(stack.getItem() instanceof IBaubleExpanded) || !(inventory instanceof InventoryBaubles)) {
+		if (stack == null || !(stack.getItem() instanceof IBaubleExpanded bauble)
+				|| !(inventory instanceof InventoryBaubles baubleInventory)) {
 			return;
 		}
-		EntityPlayer player = ((InventoryBaubles) inventory).player.get();
+		EntityPlayer player = baubleInventory.player.get();
 		if (player != null) {
-			((IBaubleExpanded) stack.getItem()).onSlotContentsChanged(stack, player);
+			bauble.onSlotContentsChanged(stack, player);
 		}
 	}
 
