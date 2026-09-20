@@ -2,6 +2,8 @@ package baubles.common.lib;
 
 import net.minecraft.nbt.NBTTagCompound;
 
+import com.gtnewhorizons.postea.api.CustomDataReplacementManager;
+
 import cpw.mods.fml.common.Loader;
 
 /// Offers the per-player baubles files to Postea's custom world data API, so versioned transformers rewrite their
@@ -26,11 +28,11 @@ public final class PosteaCompat {
     private static final class Impl {
 
         static void transform(String storageId, NBTTagCompound root) {
-            com.gtnewhorizons.postea.api.CustomDataReplacementManager.transform(storageId, root);
+            CustomDataReplacementManager.transform(storageId, root);
         }
 
         static void stamp(NBTTagCompound root) {
-            com.gtnewhorizons.postea.api.CustomDataReplacementManager.stamp(root);
+            CustomDataReplacementManager.stamp(root);
         }
     }
 }
