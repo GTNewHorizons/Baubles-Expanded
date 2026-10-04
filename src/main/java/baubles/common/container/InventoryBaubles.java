@@ -101,12 +101,11 @@ public class InventoryBaubles implements IInventory {
 
             if(stackList[slot].stackSize <= decrementBy) {
                 itemstack = stackList[slot];
+                stackList[slot] = null;
 
                 if(itemstack != null && itemstack.getItem() instanceof IBauble) {
                     ((IBauble) itemstack.getItem()).onUnequipped(itemstack, player.get());
                 }
-
-                stackList[slot] = null;
             } else {
                 itemstack = stackList[slot].splitStack(decrementBy);
 

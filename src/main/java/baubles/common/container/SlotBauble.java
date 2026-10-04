@@ -72,6 +72,21 @@ public class SlotBauble extends Slot {
     }
 
 	@Override
+	public void onSlotChanged() {
+		super.onSlotChanged();
+
+		ItemStack stack = getStack();
+		if (stack == null || !(stack.getItem() instanceof IBaubleExpanded bauble)
+				|| !(inventory instanceof InventoryBaubles baubleInventory)) {
+			return;
+		}
+		EntityPlayer player = baubleInventory.player.get();
+		if (player != null) {
+			bauble.onSlotContentsChanged(stack, player);
+		}
+	}
+
+	@Override
 	public boolean canTakeStack(EntityPlayer player) {
 		ItemStack itemStack = getStack();
 		return itemStack != null && ((IBauble)itemStack.getItem()).canUnequip(itemStack, player);
