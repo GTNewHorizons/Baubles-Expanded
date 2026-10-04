@@ -36,7 +36,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
 
 	@Override
 	public void toBytes(ByteBuf buffer) {
-        ByteBufUtils.writeVarInt(buffer, playerId, 4);
+        buffer.writeInt(playerId);
         ByteBufUtils.writeVarInt(buffer, inventory.size(), BaubleExpandedSlots.maxSlotIdBytes);
         inventory.forEachEntry((a, b) -> {
             ByteBufUtils.writeVarInt(buffer, a, BaubleExpandedSlots.maxSlotIdBytes);
@@ -48,7 +48,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
 
 	@Override
 	public void fromBytes(ByteBuf buffer) {
-        playerId = ByteBufUtils.readVarInt(buffer, 4);
+        playerId = buffer.readInt();
         int size = ByteBufUtils.readVarInt(buffer, BaubleExpandedSlots.maxSlotIdBytes);
         for (int i = 0; i < size; i++) {
             int slotId = ByteBufUtils.readVarInt(buffer, BaubleExpandedSlots.maxSlotIdBytes);
