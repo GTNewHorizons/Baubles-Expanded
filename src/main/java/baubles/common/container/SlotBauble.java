@@ -94,7 +94,7 @@ public class SlotBauble extends Slot {
         } else if (itemStack.getItem() instanceof IBauble bauble) {
             return bauble.canUnequip(itemStack, player);
         } else {
-            // Consider the rare case of an item that used to be a Bauble, but has this  property later removed (no
+            // Consider the rare case of an item that used to be a Bauble, but has this property later removed (no
             // longer implements IBauble). The player should still be able to take it out of the slot.
             return true;
         }
