@@ -298,7 +298,7 @@ public class ContainerPlayerExpanded extends Container {
 
     @Override
     public void putStacksInSlots(ItemStack[] p_75131_1_) {
-        baubles.blockEvents=true;
+        baubles.blockEvents = true;
         super.putStacksInSlots(p_75131_1_);
     }
 
