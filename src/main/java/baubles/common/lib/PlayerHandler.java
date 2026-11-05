@@ -131,6 +131,7 @@ public class PlayerHandler {
 				}
 
 				if(data != null) {
+					PosteaCompat.transform("baubles:" + player.getCommandSenderName(), data);
 					InventoryBaubles inventory = new InventoryBaubles(player);
 					inventory.readNBT(data);
 					playerBaublesServer.put(player.getCommandSenderName(), inventory);
@@ -161,6 +162,7 @@ public class PlayerHandler {
 						InventoryBaubles inventory = getPlayerBaubles(player);
 						NBTTagCompound data = new NBTTagCompound();
 						inventory.saveNBT(data);
+						PosteaCompat.stamp(data);
 
 						FileOutputStream fileoutputstream = new FileOutputStream(mainFile);
 						CompressedStreamTools.writeCompressed(data, fileoutputstream);
