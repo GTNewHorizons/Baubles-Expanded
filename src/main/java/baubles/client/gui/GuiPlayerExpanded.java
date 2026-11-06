@@ -5,11 +5,14 @@ import baubles.common.Baubles;
 import baubles.common.BaublesConfig;
 import baubles.common.container.ContainerPlayerExpanded;
 import baubles.common.container.SlotBauble;
+import baubles.common.network.PacketHandler;
+import baubles.common.network.PacketToggleBaubleRender;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
 import codechicken.nei.api.INEIGuiHandler;
 import codechicken.nei.api.TaggedInventoryArea;
+import codechicken.nei.guihook.IContainerTooltipHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Optional;
 import net.minecraft.client.Minecraft;
@@ -41,12 +44,16 @@ import java.util.Map;
 
 import static net.minecraft.client.gui.inventory.GuiInventory.func_147046_a;
 
-@Optional.Interface(iface = "codechicken.nei.api.INEIGuiHandler", modid = "NotEnoughItems")
-public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
+@Optional.InterfaceList({
+        @Optional.Interface(iface = "codechicken.nei.api.INEIGuiHandler", modid = "NotEnoughItems"),
+        @Optional.Interface(iface = "codechicken.nei.guihook.IContainerTooltipHandler", modid = "NotEnoughItems")
+})
+public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, IContainerTooltipHandler {
 
     public static final ResourceLocation background = new ResourceLocation("baubles","textures/gui/bauble_inventory.png");
     public static final ResourceLocation gui_background = new ResourceLocation("baubles","textures/gui/bauble_background.png");
     private static final ResourceLocation creative_inventory_tabs = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
+    private static final ResourceLocation COSMETIC_INVENTORY_TEXTURE = new ResourceLocation("baubles", "textures/gui/cosmetic_inventory.png");
 
     private static final boolean hasLwjgl3 = Loader.isModLoaded("lwjgl3ify");
     private static final int UNUSED_SLOT_U = 7;
@@ -55,6 +62,9 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private static final int UNUSED_SLOT_OFFSET = (UNUSED_SLOT_SIZE - 18) / 2;
     private static final int UNUSED_SLOT_SHIFT_X = 2;
     private static final int UNUSED_SLOT_SHIFT_Y = 2;
+    private static final int RENDER_TOGGLE_SIZE = 8;
+    private static final int RENDER_TOGGLE_X = 12;
+    private static final int RENDER_TOGGLE_Y = -1;
 
 	/**
      * x size of the inventory window in pixels. Defined as float, passed as int.
@@ -83,6 +93,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     private int tooltipIndexCache = -1;
     private final List<String> tooltipCache = new ArrayList<>(2);
+    private int renderToggleMouseButton = -1;
     private final Map<String, ResourceLocation> slotIcons = new HashMap<>();
 
     public GuiPlayerExpanded(EntityPlayer player) {
@@ -107,6 +118,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     @Override
     public void initGui() {
         buttonList.clear();
+        renderToggleMouseButton = Mouse.isButtonDown(0) ? 0 : -1;
         super.initGui();
 
         if (!this.mc.thePlayer.getActivePotionEffects().isEmpty() && !useOldGuiRendering) {
@@ -123,7 +135,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         ySizeFloat = (float) mouseY;
         super.drawScreen(mouseX, mouseY, partialTicks);
 
-        if(BaublesConfig.displayTooltipOnHover) {
+        if(BaublesConfig.displayTooltipOnHover && getRenderToggleAt(mouseX, mouseY) == null) {
             handleMouseHover(mouseX, mouseY);
         }
 
@@ -143,6 +155,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         if (!useOldGuiRendering) {
             this.fontRendererObj.drawString(I18n.format("container.crafting"), 86, 16, 4210752);
         }
+        drawRenderToggles();
         ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
         for (int i = 0; i < container.getBaubleSlotCount(); i++) {
             SlotBauble slot = container.getBaubleSlot(i);
@@ -155,6 +168,67 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
     private boolean isVisibleBaubleSlot(SlotBauble slot) {
         return slot != null && slot.yDisplayPosition != -2000
                 && !BaubleExpandedSlots.unknownType.equals(slot.getSlotType());
+    }
+
+    private SlotBauble getRenderToggleAt(int mouseX, int mouseY) {
+        ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+        for (int i = 0; i < container.getBaubleSlotCount(); i++) {
+            SlotBauble slot = container.getBaubleSlot(i);
+            if (!isVisibleBaubleSlot(slot) || !container.baubles.canToggleSlotRendering(slot.getSlotIndex())) continue;
+            int x = guiLeft + slot.xDisplayPosition + RENDER_TOGGLE_X;
+            int y = guiTop + slot.yDisplayPosition + RENDER_TOGGLE_Y;
+            if (mouseX >= x && mouseX < x + RENDER_TOGGLE_SIZE && mouseY >= y && mouseY < y + RENDER_TOGGLE_SIZE) {
+                return slot;
+            }
+        }
+        return null;
+    }
+
+    private void drawRenderToggles() {
+        ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_CURRENT_BIT);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glColor4f(1, 1, 1, 1);
+        mc.getTextureManager().bindTexture(COSMETIC_INVENTORY_TEXTURE);
+        for (int i = 0; i < container.getBaubleSlotCount(); i++) {
+            SlotBauble slot = container.getBaubleSlot(i);
+            if (!isVisibleBaubleSlot(slot) || !container.baubles.canToggleSlotRendering(slot.getSlotIndex())) continue;
+            int x = slot.xDisplayPosition + RENDER_TOGGLE_X;
+            int y = slot.yDisplayPosition + RENDER_TOGGLE_Y;
+            int u = container.baubles.isSlotRendered(slot.getSlotIndex()) ? 75 : 83;
+            drawTexturedModalRect(x, y, u, 0, RENDER_TOGGLE_SIZE, RENDER_TOGGLE_SIZE);
+        }
+        GL11.glPopAttrib();
+    }
+
+    public void drawRenderToggleTooltip(int mouseX, int mouseY) {
+        if (mc.thePlayer.inventory.getItemStack() != null) return;
+        SlotBauble slot = getRenderToggleAt(mouseX, mouseY);
+        if (slot == null) return;
+        GuiScreenReflectionHelper.drawTooltip(this,
+                Collections.singletonList(I18n.format("button.baubles.visibility")),
+                mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderToolTip(ItemStack stack, int mouseX, int mouseY) {
+        if (getRenderToggleAt(mouseX, mouseY) == null) super.renderToolTip(stack, mouseX, mouseY);
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public List<String> handleItemTooltip(GuiContainer gui, ItemStack stack, int mouseX, int mouseY, List<String> tooltip) {
+        return getRenderToggleAt(mouseX, mouseY) == null ? tooltip : new ArrayList<>();
+    }
+
+    @Override
+    @Optional.Method(modid = "NotEnoughItems")
+    public Map<String, String> handleHotkeys(GuiContainer gui, int mouseX, int mouseY, Map<String, String> hotkeys) {
+        return getRenderToggleAt(mouseX, mouseY) == null ? hotkeys : new HashMap<>();
     }
 
     @Override
@@ -492,6 +566,16 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        SlotBauble toggle = getRenderToggleAt(mouseX, mouseY);
+        if (toggle != null) {
+            renderToggleMouseButton = mouseButton;
+            if (mouseButton == 0) {
+                ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+                PacketHandler.INSTANCE.sendToServer(new PacketToggleBaubleRender(container.windowId,
+                        toggle.getSlotIndex(), container.baubles.getLayoutRevision()));
+            }
+            return;
+        }
         if (isClickInUI(mouseX, mouseY)) { // Prevent dropping items when clicking in UI
             return;
         }
@@ -501,11 +585,20 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     @Override
     protected void mouseMovedOrUp(int mouseX, int mouseY, int mouseButton) {
+        if (renderToggleMouseButton != -1) {
+            if (mouseButton == renderToggleMouseButton) renderToggleMouseButton = -1;
+            return;
+        }
         if (isClickInUI(mouseX, mouseY)) { // Prevent dropping items when clicking in UI
             return;
         }
 
         super.mouseMovedOrUp(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    protected void mouseClickMove(int mouseX, int mouseY, int mouseButton, long elapsed) {
+        if (renderToggleMouseButton == -1) super.mouseClickMove(mouseX, mouseY, mouseButton, elapsed);
     }
 
     private int getScrollbarX() {

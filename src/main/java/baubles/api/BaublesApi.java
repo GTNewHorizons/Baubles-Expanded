@@ -1,6 +1,7 @@
 package baubles.api;
 
 import baubles.api.expanded.IBaubleSlotInventory;
+import baubles.api.expanded.IBaubleRenderInventory;
 import baubles.api.expanded.IBaubleSlotSettings;
 import baubles.api.expanded.BaubleSlotResult;
 import baubles.api.expanded.BaubleSlotContext;
@@ -60,7 +61,7 @@ public class BaublesApi
         ItemStack stack = inventory.getStackInSlot(slot);
         if (stack == null || !filter.test(stack)) return null;
         BaubleSlotContext context = inventory instanceof IBaubleSlotSettings settings ? settings.getSlotContext(slot, false)
-                : new BaubleSlotContext(player, "unknown", slot, slot, false, true, true);
+                : new BaubleSlotContext(player, "unknown", slot, slot, false, isBaubleRendered(inventory, slot), true);
         return new BaubleSlotResult(context, stack);
     }
 
@@ -70,6 +71,21 @@ public class BaublesApi
     public static IBaubleSlotInventory getBaubleSlots(EntityPlayer player) {
         IInventory inventory = getBaubles(player);
         return inventory instanceof IBaubleSlotInventory ? (IBaubleSlotInventory) inventory : null;
+    }
+
+    /**
+     * Returns optional model visibility support from the player's current inventory.
+     */
+    public static IBaubleRenderInventory getBaubleRenders(EntityPlayer player) {
+        IInventory inventory = getBaubles(player);
+        return inventory instanceof IBaubleRenderInventory ? (IBaubleRenderInventory) inventory : null;
+    }
+
+    /**
+     * Checks model visibility using an already resolved inventory. Legacy inventories remain visible.
+     */
+    public static boolean isBaubleRendered(IInventory inventory, int slot) {
+        return !(inventory instanceof IBaubleRenderInventory renders) || renders.isSlotRendered(slot);
     }
 
 	/**

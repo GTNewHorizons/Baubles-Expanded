@@ -23,6 +23,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
     private boolean oldGui;
     private BaubleSlotState state;
     private ItemStack[] inventory;
+    private int[] hiddenSlots;
 
     public PacketSyncAllBauble() {}
 
@@ -33,6 +34,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         revision = inv.getLayoutRevision();
         state = inv.getSlotState();
         oldGui = inv.usesOldGuiRendering();
+        hiddenSlots = inv.getHiddenSlots();
         inventory = new ItemStack[inv.getSizeInventory()];
         for (int i = 0; i < inventory.length; i++) inventory[i] = ItemStack.copyItemStack(inv.getStackInSlot(i));
     }
@@ -44,6 +46,8 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         buffer.writeLong(revision);
         buffer.writeBoolean(oldGui);
         BaubleSlotCodec.writeState(buffer, state);
+        ByteBufUtils.writeVarInt(buffer, hiddenSlots.length, 5);
+        for (int slot : hiddenSlots) ByteBufUtils.writeVarInt(buffer, slot, 5);
         writeStacks(buffer, inventory);
     }
 
@@ -66,6 +70,14 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         oldGui = buffer.readBoolean();
         state = BaubleSlotCodec.readState(buffer);
         inventory = new ItemStack[state.getAssignments().length];
+        hiddenSlots = new int[BaubleSlotCodec.readSize(buffer, inventory.length)];
+        int previous = -1;
+        for (int i = 0; i < hiddenSlots.length; i++) {
+            int slot = BaubleSlotCodec.readSize(buffer, inventory.length - 1);
+            if (slot <= previous) throw new DecoderException("Unordered hidden bauble indices");
+            hiddenSlots[i] = slot;
+            previous = slot;
+        }
         readStacks(buffer, inventory);
     }
 
@@ -87,7 +99,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         Entity entity = world.getEntityByID(message.playerId);
         if (entity instanceof EntityPlayer player) {
             PlayerHandler.getPlayerBaubles(player).applySnapshot(
-                    message.state, message.revision, message.inventory, message.oldGui);
+                    message.state, message.revision, message.inventory, message.oldGui, message.hiddenSlots);
         }
         return null;
     }
