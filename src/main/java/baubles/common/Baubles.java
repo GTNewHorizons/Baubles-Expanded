@@ -1,30 +1,31 @@
 package baubles.common;
 
-import java.io.File;
-
 import baubles.Tags;
-import baubles.common.lib.PlayerHandler;
-import codechicken.nei.api.API;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.event.FMLServerStoppedEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import baubles.common.command.CommandBaubles;
 import baubles.common.event.EventHandlerCleanup;
 import baubles.common.event.EventHandlerEntity;
 import baubles.common.event.EventHandlerNetwork;
+import baubles.common.lib.PlayerHandler;
 import baubles.common.network.PacketHandler;
+import codechicken.nei.api.API;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import net.minecraft.item.Item;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.Configuration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.File;
 
 @Mod(modid = Baubles.MODID, name = Baubles.MODNAME, version = Baubles.VERSION)
 public class Baubles {
@@ -80,6 +81,11 @@ public class Baubles {
     @Mod.EventHandler
     public void onServerStopped(FMLServerStoppedEvent event) {
         PlayerHandler.clearServerPlayerBaubles();
+    }
+
+    @Mod.EventHandler
+    public void onServerStarting(FMLServerStartingEvent event) {
+        event.registerServerCommand(new CommandBaubles());
     }
 
 }
