@@ -5,12 +5,20 @@ import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
 import baubles.api.expanded.IBaubleSlotInventory;
+import baubles.api.expanded.IBaubleSlotSettings;
+import baubles.api.expanded.IBaubleLifecycle;
+import baubles.api.expanded.BaubleSlotContext;
+import baubles.api.expanded.BaubleSlotType;
 import baubles.common.Baubles;
 import baubles.common.BaublesConfig;
+import baubles.common.BaubleSlotConfiguration;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncAllBauble;
 import baubles.common.network.PacketSyncBauble;
+import baubles.common.network.BaubleSlotCodec;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -29,7 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-public class InventoryBaubles implements IBaubleSlotInventory {
+public class InventoryBaubles implements IBaubleSlotInventory, IBaubleSlotSettings {
     public ItemStack[] stackList;
     private Container eventHandler;
     public WeakReference<EntityPlayer> player;
@@ -43,6 +51,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
     private boolean oldGuiRendering = BaublesConfig.useOldGuiRendering;
     private WeakReference<EntityPlayer> loadedPlayer = new WeakReference<>(null);
     private final ArrayDeque<ItemStack> pendingReturns = new ArrayDeque<>();
+    private ItemStack[] previousStacks = new ItemStack[0];
 
     public InventoryBaubles(EntityPlayer player) {
         slotState = new BaubleSlotState(BaubleExpandedSlots.getCurrentSlotAssignments(), Collections.emptyMap());
@@ -74,12 +83,113 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         return slotState;
     }
 
+    /**
+     * Exports effective rules for a detached container without exporting equipment or invoking callbacks.
+     */
+    public NBTTagCompound writeContainerData() {
+        NBTTagCompound data = new NBTTagCompound();
+        ByteBuf buffer = Unpooled.buffer();
+        try {
+            BaubleSlotCodec.writeState(buffer, slotState);
+            byte[] state = new byte[buffer.readableBytes()];
+            buffer.readBytes(state);
+            data.setByteArray("SlotState", state);
+        } finally {
+            buffer.release();
+        }
+        data.setBoolean("OldGui", oldGuiRendering);
+        return data;
+    }
+
+    /**
+     * Initializes a detached client inventory with server rules and no equipment side effects.
+     * Vanilla container packets supply the contents separately.
+     */
+    public void readContainerData(NBTTagCompound data) {
+        EntityPlayer owner = player.get();
+        if (owner == null || !owner.worldObj.isRemote || !blockEvents) {
+            throw new IllegalStateException("Container data requires a detached client inventory with events blocked");
+        }
+        ByteBuf buffer = Unpooled.wrappedBuffer(data.getByteArray("SlotState"));
+        BaubleSlotState state;
+        try {
+            state = BaubleSlotCodec.readState(buffer);
+            if (buffer.isReadable()) throw new IllegalArgumentException("Trailing container slot data");
+        } finally {
+            buffer.release();
+        }
+        if (state.getAssignments().length != stackList.length) throw new IllegalArgumentException("Container slot count differs");
+        slotState = state;
+        oldGuiRendering = data.getBoolean("OldGui");
+        resetStackSnapshots();
+    }
+
     public long getLayoutRevision() {
         return layoutRevision;
     }
 
     public boolean usesOldGuiRendering() {
         return oldGuiRendering;
+    }
+
+    private boolean isValidSlot(int slot) {
+        return slot >= 0 && slot < getSizeInventory()
+                && !BaubleExpandedSlots.unknownType.equals(getSlotType(slot));
+    }
+
+    @Override
+    public boolean isSlotActive(int slot) {
+        return slotState.isActive(slot);
+    }
+
+    @Override
+    public void setSlotActive(int slot, boolean active) {
+        requireServerPlayer();
+        updateSlots(getPendingSlotState().withSlotActive(slot, active));
+    }
+
+    @Override
+    public void setSlotsActive(String type, boolean active) {
+        requireServerPlayer();
+        BaubleSlotState.validateType(type);
+        updateSlots(getPendingSlotState().withSlotsActive(type, active));
+    }
+
+    @Override
+    public Map<String, BaubleSlotType> getSlotDefinitions() {
+        return slotState.getDefinitions();
+    }
+
+    @Override
+    public BaubleSlotType getSlotDefinition(String type) {
+        return slotState.getDefinition(type);
+    }
+
+    @Override
+    public BaubleSlotContext getSlotContext(int slot, boolean cosmetic) {
+        return context(slotState, slot, cosmetic);
+    }
+
+    private BaubleSlotContext context(BaubleSlotState state, int slot, boolean cosmetic) {
+        boolean active = state.isActive(slot);
+        boolean rendered = active;
+        return new BaubleSlotContext(player.get(), state.getType(slot), slot, state.getTypeIndex(slot), cosmetic, rendered, active);
+    }
+
+    public boolean canTypeFitSlot(String itemType, String slotType) {
+        if (itemType == null || slotType == null) return false;
+        return itemType.equals(slotType) || itemType.equals(BaubleExpandedSlots.universalType)
+                || slotType.equals(BaubleExpandedSlots.universalType) && getSlotDefinition(itemType).fitsUniversal();
+    }
+
+    public BaubleSlotState prepareConfiguration(String[] baseline, Map<String, BaubleSlotType> definitions) {
+        requireServerPlayer();
+        if (callbackDepth > 0 || changingSlots || returningItems) throw new IllegalStateException("Inventory is busy");
+        return getPendingSlotState().rebase(baseline, definitions);
+    }
+
+    public void applyConfiguration(BaubleSlotState state) {
+        updateSlots(state);
     }
 
     @Override
@@ -132,25 +242,48 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         pendingSlotState = null;
         String[] assignments = updated.getAssignments();
         if (Arrays.equals(assignments, getSlotAssignments())
-                && updated.getModifiers().equals(slotState.getModifiers())) return;
+                && updated.getModifiers().equals(slotState.getModifiers())
+                && updated.getDefinitions().equals(slotState.getDefinitions())
+                && updated.getInactiveSlots().equals(slotState.getInactiveSlots())) return;
         changingSlots = true;
         try {
             boolean closedBaubles = owner.openContainer instanceof ContainerPlayerExpanded;
             if (closedBaubles) owner.closeScreen();
             ItemStack[] previous = stackList;
             BaubleSlotState previousState = slotState;
+            BaubleSlotContext[] oldContexts = new BaubleSlotContext[previous.length];
+            for (int slot = 0; slot < previous.length; slot++) oldContexts[slot] = context(previousState, slot, false);
             slotState = updated;
             stackList = Arrays.copyOf(previous, assignments.length);
             layoutRevision++;
             for (int slot = 0; slot < previous.length; slot++) {
-                if (previousState.getType(slot).equals(updated.getType(slot)) && slot < stackList.length) continue;
+                boolean retained = previousState.getType(slot).equals(updated.getType(slot)) && slot < stackList.length;
+                if (retained) {
+                    if (previous[slot] != null && !matchesSlotType(slot, previous[slot])) {
+                        stackList[slot] = null;
+                        if (previousState.isActive(slot)) notifyUnequipped(previous[slot], oldContexts[slot], null);
+                        pendingReturns.add(previous[slot]);
+                        continue;
+                    }
+                    if (previous[slot] != null && previous[slot].stackSize > getSlotDefinition(getSlotType(slot)).stackLimit()) {
+                        ItemStack before = previous[slot].copy();
+                        pendingReturns.add(previous[slot].splitStack(previous[slot].stackSize - getSlotDefinition(getSlotType(slot)).stackLimit()));
+                        if (updated.isActive(slot)) notifyStackChanged(slot, previous[slot], before);
+                    }
+                    if (previous[slot] != null && previousState.isActive(slot) != updated.isActive(slot)) {
+                        if (previousState.isActive(slot)) notifyUnequipped(previous[slot], oldContexts[slot], previous[slot]);
+                        else notifyEquipped(previous[slot], getSlotContext(slot, false), previous[slot]);
+                    }
+                    continue;
+                }
                 ItemStack stack = previous[slot];
                 if (slot < stackList.length) stackList[slot] = null;
                 if (stack != null) {
-                    notifyUnequipped(stack, owner);
+                    if (previousState.isActive(slot)) notifyUnequipped(stack, oldContexts[slot], null);
                     pendingReturns.add(stack);
                 }
             }
+            resetStackSnapshots();
             returnOverflowItems();
             markDirty();
             if (owner instanceof EntityPlayerMP serverPlayer) {
@@ -163,11 +296,11 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         }
     }
 
-    private void notifyUnequipped(ItemStack stack, EntityPlayer owner) {
+    private void notifyUnequipped(ItemStack stack, BaubleSlotContext context, ItemStack replacement) {
         if (stack.getItem() instanceof IBauble bauble) {
             callbackDepth++;
             try {
-                bauble.onUnequipped(stack, owner);
+                BaubleLifecycle.unequipped(stack, context, replacement);
             } catch (Exception e) {
                 Baubles.log.error("Error unequipping bauble {}", stack, e);
             } finally {
@@ -176,11 +309,11 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         }
     }
 
-    private void notifyEquipped(ItemStack stack, EntityPlayer owner) {
-        if (owner != null && stack.getItem() instanceof IBauble bauble) {
+    private void notifyEquipped(ItemStack stack, BaubleSlotContext context, ItemStack previous) {
+        if (context.player() != null && stack.getItem() instanceof IBauble) {
             callbackDepth++;
             try {
-                bauble.onEquipped(stack, owner);
+                BaubleLifecycle.equipped(stack, context, previous);
             } catch (Exception e) {
                 Baubles.log.error("Error equipping bauble {}", stack, e);
             } finally {
@@ -200,23 +333,86 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         }
         for (int slot = 0; slot < getSizeInventory(); slot++) {
             ItemStack stack = getStackInSlot(slot);
-            if (stack == null || !(stack.getItem() instanceof IBauble bauble)) continue;
+            if (stack == null || !isSlotActive(slot) || !(stack.getItem() instanceof IBauble)) continue;
             callbackDepth++;
             try {
-                bauble.onWornTick(stack, owner);
+                BaubleLifecycle.tick(stack, getSlotContext(slot, false));
             } finally {
                 callbackDepth--;
             }
         }
+        if (!owner.worldObj.isRemote) {
+            detectStackChanges();
+        }
+    }
+
+    private void resetStackSnapshots() {
+        previousStacks = new ItemStack[stackList.length];
+        for (int slot = 0; slot < stackList.length; slot++) previousStacks[slot] = ItemStack.copyItemStack(stackList[slot]);
+    }
+
+    private void detectStackChanges() {
+        if (previousStacks.length != stackList.length) previousStacks = Arrays.copyOf(previousStacks, stackList.length);
+        for (int slot = 0; slot < stackList.length; slot++) {
+            ItemStack current = stackList[slot];
+            ItemStack previous = previousStacks[slot];
+            if (ItemStack.areItemStacksEqual(current, previous)) continue;
+            if (current != null && current.stackSize <= 0) current = stackList[slot] = null;
+            if (!blockEvents && isSlotActive(slot)) {
+                if (current != null && previous != null && current.getItem() == previous.getItem()) {
+                    notifyStackChanged(slot, current, previous);
+                } else {
+                    if (previous != null) notifyUnequipped(previous, getSlotContext(slot, false), current);
+                    if (current != null) notifyEquipped(current, getSlotContext(slot, false), previous);
+                }
+            }
+            syncSlotToClients(slot);
+        }
+    }
+
+    private void notifyStackChanged(int slot, ItemStack current, ItemStack previous) {
+        callbackDepth++;
+        try {
+            BaubleLifecycle.changed(current, getSlotContext(slot, false), ItemStack.copyItemStack(previous));
+        } catch (Exception e) {
+            Baubles.log.error("Error updating bauble state {}", current, e);
+        } finally {
+            callbackDepth--;
+        }
+    }
+
+    public void onPlayerLoaded() {
+        for (int slot = 0; slot < stackList.length; slot++) {
+            if (stackList[slot] == null || !isSlotActive(slot)) continue;
+            callbackDepth++;
+            try {
+                BaubleLifecycle.loaded(stackList[slot], getSlotContext(slot, false));
+            } catch (Exception e) {
+                Baubles.log.error("Error loading bauble {}", stackList[slot], e);
+            } finally {
+                callbackDepth--;
+            }
+        }
+        resetStackSnapshots();
+    }
+
+    public void applyStackSync(int slot, ItemStack stack) {
+        if (player.get() == null || !player.get().worldObj.isRemote) return;
+        ItemStack previous = getStackInSlot(slot);
+        if (previous != null && stack != null && previous.getItem() == stack.getItem()) {
+            stackList[slot] = stack;
+            if (!blockEvents && isSlotActive(slot) && !ItemStack.areItemStacksEqual(previous, stack)) notifyStackChanged(slot, stack, previous);
+        } else setInventorySlotContents(slot, stack);
     }
 
     public void onSlotContentsChanged(int slot) {
         ItemStack stack = getStackInSlot(slot);
         EntityPlayer owner = player.get();
-        if (!blockEvents && owner != null && stack != null && stack.getItem() instanceof IBaubleExpanded bauble) {
+        if (!blockEvents && isSlotActive(slot) && owner != null && stack != null) {
             callbackDepth++;
             try {
-                bauble.onSlotContentsChanged(stack, owner);
+                if (stack.getItem() instanceof IBaubleLifecycle item) item.onBaubleContentsChanged(stack, getSlotContext(slot, false));
+                else if (stack.getItem() instanceof IBaubleExpanded item) item.onSlotContentsChanged(stack, owner);
             } catch (Exception e) {
                 Baubles.log.error("Error updating bauble {}", stack, e);
             } finally {
@@ -234,6 +430,9 @@ public class InventoryBaubles implements IBaubleSlotInventory {
             throw new IllegalArgumentException("Snapshot items and layout have different sizes");
         }
         ItemStack[] previous = stackList;
+        BaubleSlotState previousState = slotState;
+        BaubleSlotContext[] previousContexts = new BaubleSlotContext[previous.length];
+        for (int slot = 0; slot < previous.length; slot++) previousContexts[slot] = context(previousState, slot, false);
         boolean loadAll = loadedPlayer.get() != owner;
         loadedPlayer = new WeakReference<>(owner);
         slotState = state;
@@ -243,16 +442,30 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         for (int slot = 0; slot < Math.max(previous.length, stacks.length); slot++) {
             ItemStack before = slot < previous.length ? previous[slot] : null;
             ItemStack after = getStackInSlot(slot);
-            if (!loadAll && ItemStack.areItemStacksEqual(before, after)) continue;
-            if (before != null && !loadAll) notifyUnequipped(before, owner);
-            if (after != null && after.getItem() instanceof IBauble bauble) {
+            boolean wasActive = previousState.isActive(slot);
+            boolean active = isSlotActive(slot);
+            if (!loadAll && wasActive == active && ItemStack.areItemStacksEqual(before, after)) continue;
+            if (!loadAll && wasActive && active && before != null && after != null && before.getItem() == after.getItem()) {
+                notifyStackChanged(slot, after, before);
+                continue;
+            }
+            if (before != null && wasActive && !loadAll) notifyUnequipped(before, previousContexts[slot], after);
+            if (after != null && active) {
+                if (!loadAll && !wasActive) {
+                    notifyEquipped(after, getSlotContext(slot, false), before);
+                    continue;
+                }
+                callbackDepth++;
                 try {
-                    bauble.onPlayerLoad(after, owner);
+                    BaubleLifecycle.loaded(after, getSlotContext(slot, false));
                 } catch (Exception e) {
                     Baubles.log.error("Error loading bauble {}", after, e);
+                } finally {
+                    callbackDepth--;
                 }
             }
         }
+        resetStackSnapshots();
     }
 
     public void returnOverflowItems() {
@@ -351,7 +564,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
                     stackList[slot] = null;
                 }
             }
-            if (!blockEvents) notifyUnequipped(itemstack, player.get());
+            if (!blockEvents && isSlotActive(slot)) notifyUnequipped(itemstack, getSlotContext(slot, false), stackList[slot]);
 
             if(eventHandler != null)
                 eventHandler.onCraftMatrixChanged(this);
@@ -373,9 +586,16 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         ItemStack previous = stackList[slot];
         boolean changed = !ItemStack.areItemStacksEqual(previous, stack);
         stackList[slot] = stack;
-        if (!blockEvents && changed) {
-            if (previous != null) notifyUnequipped(previous, player.get());
-            if (stack != null) notifyEquipped(stack, player.get());
+        if (!blockEvents && changed && isSlotActive(slot)) {
+            EntityPlayer owner = player.get();
+            if (owner != null && owner.worldObj.isRemote && previous != null && stack != null
+                    && previous.getItem() == stack.getItem()) {
+                // Vanilla container packets use the inventory setter for synchronized item data.
+                notifyStackChanged(slot, stack, previous);
+            } else {
+                if (previous != null) notifyUnequipped(previous, getSlotContext(slot, false), stack);
+                if (stack != null) notifyEquipped(stack, getSlotContext(slot, false), previous);
+            }
         }
         if (eventHandler != null) {
             eventHandler.onCraftMatrixChanged(this);
@@ -427,13 +647,18 @@ public class InventoryBaubles implements IBaubleSlotInventory {
      */
     @Override
     public boolean isItemValidForSlot(int slot, ItemStack stack) {
+        return stack != null && isSlotActive(slot) && matchesSlotType(slot, stack)
+                && BaubleLifecycle.canEquip(stack, getSlotContext(slot, false));
+    }
+
+    public boolean matchesSlotType(int slot, ItemStack stack) {
         String slotType = getSlotType(slot);
-        if (stack == null || slot < 0 || slot >= getSizeInventory() || BaubleExpandedSlots.unknownType.equals(slotType)) {
+        if (stack == null || !isValidSlot(slot)) {
             return false;
         }
 
         Item item = stack.getItem();
-        if(!(item instanceof IBauble) || !((IBauble) item).canEquip(stack, player.get())) {
+        if(!(item instanceof IBauble)) {
             return false;
         }
 
@@ -447,7 +672,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
 
         if (types == null) return false;
         for(String type : types) {
-            if (BaublesConfig.canTypeFitSlot(type, slotType)) {
+            if (canTypeFitSlot(type, slotType)) {
                 return true;
             }
         }
@@ -461,7 +686,8 @@ public class InventoryBaubles implements IBaubleSlotInventory {
     }
 
     public void saveNBT(NBTTagCompound tags) {
-        BaubleSlotStorage.write(tags, new BaubleSlotState(slotState.getAssignments(), getPendingSlotState().getModifiers()));
+        BaubleSlotStorage.write(tags, new BaubleSlotState(slotState.getAssignments(), getPendingSlotState().getModifiers(),
+                slotState.getDefinitions(), getPendingSlotState().getInactiveSlots()));
         NBTTagList tagList = new NBTTagList();
         NBTTagCompound invSlot;
         for (int slot = 0; slot < stackList.length; ++slot) {
@@ -487,8 +713,8 @@ public class InventoryBaubles implements IBaubleSlotInventory {
     public void readNBT(NBTTagCompound tags) {
         pendingSlotState = null;
         BaubleSlotState saved = BaubleSlotStorage.read(tags);
-        slotState = BaubleSlotState.resolve(BaubleExpandedSlots.getCurrentSlotAssignments(),
-                saved.getAssignments(), saved.getModifiers());
+        slotState = saved.rebase(BaubleExpandedSlots.getCurrentSlotAssignments(),
+                BaubleSlotConfiguration.getDefinitions());
         stackList = new ItemStack[slotState.getAssignments().length];
         pendingReturns.clear();
         NBTTagList tagList = tags.getTagList("Baubles.Inventory", 10);
@@ -500,8 +726,10 @@ public class InventoryBaubles implements IBaubleSlotInventory {
             if (itemstack != null) {
                 if (slot >= 0 && slot < stackList.length && stackList[slot] == null
                         && !BaubleExpandedSlots.unknownType.equals(getSlotType(slot))
-                        && saved.getType(slot).equals(getSlotType(slot))) {
+                        && saved.getType(slot).equals(getSlotType(slot)) && matchesSlotType(slot, itemstack)) {
                     stackList[slot] = itemstack;
+                    int limit = getSlotDefinition(getSlotType(slot)).stackLimit();
+                    if (itemstack.stackSize > limit) pendingReturns.add(itemstack.splitStack(itemstack.stackSize - limit));
                 } else {
                     pendingReturns.add(itemstack);
                 }
@@ -512,6 +740,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
             ItemStack stack = ItemStack.loadItemStackFromNBT(overflow.getCompoundTagAt(i));
             if (stack != null) pendingReturns.add(stack);
         }
+        resetStackSnapshots();
     }
 
     public void dropItems(ArrayList<EntityItem> drops) {
@@ -555,6 +784,8 @@ public class InventoryBaubles implements IBaubleSlotInventory {
 
     public void syncSlotToClients(int slot) {
         if (changingSlots) return;
+        if (previousStacks.length != stackList.length) previousStacks = Arrays.copyOf(previousStacks, stackList.length);
+        if (slot >= 0 && slot < previousStacks.length) previousStacks[slot] = ItemStack.copyItemStack(stackList[slot]);
         try {
             final EntityPlayer entityPlayer = this.player.get();
             if (entityPlayer instanceof EntityPlayerMP playerMP && !entityPlayer.worldObj.isRemote) {

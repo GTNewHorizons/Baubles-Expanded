@@ -2,7 +2,9 @@ package baubles.common.network;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.BitSet;
 
+import baubles.api.expanded.BaubleSlotType;
 import baubles.common.container.BaubleSlotState;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import io.netty.buffer.ByteBuf;
@@ -23,6 +25,22 @@ public class BaubleSlotCodec {
                 buffer.writeInt(source.getValue());
             }
         }
+        writePolicies(buffer, state);
+    }
+
+    private static void writePolicies(ByteBuf buffer, BaubleSlotState state) {
+        ByteBufUtils.writeVarInt(buffer, state.getDefinitions().size(), 5);
+        for (BaubleSlotType type : state.getDefinitions().values()) {
+            ByteBufUtils.writeUTF8String(buffer, type.id());
+            buffer.writeInt(type.order());
+            ByteBufUtils.writeUTF8String(buffer, type.icon());
+            buffer.writeByte((type.cosmetic() ? 1 : 0) | (type.renderToggle() ? 2 : 0) | (type.nativeGui() ? 4 : 0)
+                    | (type.enabled() ? 8 : 0) | (type.fitsUniversal() ? 16 : 0));
+            buffer.writeInt(type.stackLimit());
+        }
+        int[] inactive = state.getInactiveSlots().stream().toArray();
+        ByteBufUtils.writeVarInt(buffer, inactive.length, 5);
+        for (int slot : inactive) ByteBufUtils.writeVarInt(buffer, slot, 5);
     }
 
     public static BaubleSlotState readState(ByteBuf buffer) {
@@ -42,7 +60,31 @@ public class BaubleSlotCodec {
             }
             if (modifiers.put(type, values) != null) throw new DecoderException("Duplicate slot type");
         }
-        return new BaubleSlotState(assignments, modifiers);
+        Map<String, BaubleSlotType> definitions = new LinkedHashMap<>();
+        int definitionCount = readSize(buffer, buffer.readableBytes());
+        for (int i = 0; i < definitionCount; i++) {
+            String id = ByteBufUtils.readUTF8String(buffer);
+            int order = buffer.readInt();
+            String icon = ByteBufUtils.readUTF8String(buffer);
+            int flags = buffer.readUnsignedByte();
+            if ((flags & ~31) != 0) throw new DecoderException("Invalid slot policy flags");
+            BaubleSlotType type = new BaubleSlotType(id, order, icon, (flags & 1) != 0, (flags & 2) != 0,
+                    (flags & 4) != 0, (flags & 8) != 0, buffer.readInt(), (flags & 16) != 0);
+            if (definitions.put(id, type) != null) throw new DecoderException("Duplicate slot definition");
+        }
+        for (String type : assignments) {
+            if (!definitions.containsKey(type)) throw new DecoderException("Missing slot definition: " + type);
+        }
+        BitSet inactive = new BitSet();
+        int inactiveCount = readSize(buffer, size);
+        int previous = -1;
+        for (int i = 0; i < inactiveCount; i++) {
+            int slot = readSize(buffer, size - 1);
+            if (slot <= previous) throw new DecoderException("Unordered inactive slots");
+            inactive.set(slot);
+            previous = slot;
+        }
+        return new BaubleSlotState(assignments, modifiers, definitions, inactive);
     }
 
     public static int readSize(ByteBuf buffer, int maximum) {

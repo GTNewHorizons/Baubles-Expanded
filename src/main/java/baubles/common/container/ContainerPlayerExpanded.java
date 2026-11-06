@@ -23,6 +23,7 @@ import net.minecraft.util.IIcon;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 import static baubles.common.BaublesConfig.maxColumns;
 
@@ -92,12 +93,12 @@ public class ContainerPlayerExpanded extends Container {
         baubleFirstSlotIndex = slotsAdded;
         String[] currentSlotAssignments = baubles.getSlotAssignments();
         for (String type : currentSlotAssignments) {
-            if (BaublesConfig.showUnusedSlots || !BaubleExpandedSlots.unknownType.equals(type)) baubleSlotCount++;
+            if (isTypeVisible(type)) baubleSlotCount++;
         }
         int visibleIndex = 0;
         for (int index = 0; index < currentSlotAssignments.length; index++) {
             String type = currentSlotAssignments[index];
-            boolean visible = BaublesConfig.showUnusedSlots || !BaubleExpandedSlots.unknownType.equals(type);
+            boolean visible = isTypeVisible(type);
             int x = useOldGuiRendering ? slotStartX + slotOffset * (visibleIndex / 4) : -18 - 18 * (visibleIndex % getColumns());
             int y = useOldGuiRendering ? slotStartY + slotOffset * (visibleIndex % 4) : 12 + slotOffset * (visibleIndex / getColumns());
             SlotBauble slot = new SlotBauble(baubles, type, index, x, y);
@@ -106,6 +107,12 @@ public class ContainerPlayerExpanded extends Container {
                 visibleBaubleSlots.add(slot);
                 visibleIndex++;
             } else slot.yDisplayPosition = -2000;
+        }
+        visibleBaubleSlots.sort(Comparator.comparingInt(slot -> slot.getSlotDefinition().order()));
+        for (int index = 0; index < visibleBaubleSlots.size(); index++) {
+            SlotBauble slot = visibleBaubleSlots.get(index);
+            slot.xDisplayPosition = useOldGuiRendering ? slotStartX + slotOffset * (index / 4) : -18 - 18 * (index % getColumns());
+            slot.yDisplayPosition = useOldGuiRendering ? slotStartY + slotOffset * (index % 4) : 12 + slotOffset * (index / getColumns());
         }
 
         // Inventory slots
@@ -176,6 +183,11 @@ public class ContainerPlayerExpanded extends Container {
         return useOldGuiRendering;
     }
 
+    private boolean isTypeVisible(String type) {
+        return baubles.getSlotDefinition(type).nativeGui()
+                && (BaublesConfig.showUnusedSlots || !BaubleExpandedSlots.unknownType.equals(type));
+    }
+
     public void scrollTo(float offset) {
         if (!canScroll()) return;
         final int activeBaubleSlots = baubleSlotCount;
@@ -226,6 +238,7 @@ public class ContainerPlayerExpanded extends Container {
     public ItemStack slotClick(int slot, int button, int mode, EntityPlayer player) {
         if (!canInteractWith(player) || slot >= inventorySlots.size() || slot < -1 && slot != -999
                 || mode < 0 || mode > 6 || button < 0) return null;
+        if (slot >= 0 && inventorySlots.get(slot) instanceof SlotBauble baubleSlot && !isTypeVisible(baubleSlot.getSlotType())) return null;
         if (mode == 2 ? button > 8 : mode == 3 ? button != 2
                 : mode == 5 ? button > 10 || (button & 3) > 2 : button > 1) return null;
         return super.slotClick(slot, button, mode, player);
@@ -370,7 +383,7 @@ public class ContainerPlayerExpanded extends Container {
             if (type.equals(BaubleExpandedSlots.universalType) || type.equals(slotType)) {
                 return 2;
             }
-            if (BaublesConfig.canTypeFitSlot(type, slotType)) {
+            if (baubles.canTypeFitSlot(type, slotType)) {
                 best = 1;
             }
         }
@@ -385,6 +398,7 @@ public class ContainerPlayerExpanded extends Container {
                     sourceStack.stackSize > 0 && index >= startIndex && index < endIndex;
                     index += reverse ? -1 : 1) {
                 Slot targetSlot = (Slot) inventorySlots.get(index);
+                if (targetSlot instanceof SlotBauble baubleSlot && !isTypeVisible(baubleSlot.getSlotType())) continue;
                 ItemStack targetStack = targetSlot.getStack();
                 if ((pass == 0) != (targetStack != null) || !targetSlot.isItemValid(sourceStack)) continue;
                 int limit = Math.min(sourceStack.getMaxStackSize(), targetSlot.getSlotStackLimit());

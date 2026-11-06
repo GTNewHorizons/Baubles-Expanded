@@ -312,6 +312,18 @@ public class BaubleExpandedSlots {
         }
     }
 
+    /**
+     * Publishes an already validated configuration on the server game thread.
+     * Existing registrations remain valid for downstream callers.
+     */
+    public static void applyConfiguration(String[] layout, Iterable<String> types) {
+        for (String type : types) {
+            if (!registeredTypes.contains(type)) registeredTypes.add(type);
+        }
+        assignedSlots.clear();
+        for (String type : layout) assignedSlots.add(type);
+    }
+
     private static final ArrayList<String> assignedSlots = new ArrayList<>();
     private static final ArrayList<String> registeredTypes = new ArrayList<>();
     static {
