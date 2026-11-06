@@ -2,9 +2,11 @@ package baubles.api;
 
 import baubles.api.expanded.IBaubleSlotInventory;
 import baubles.api.expanded.IBaubleRenderInventory;
+import baubles.api.expanded.IBaubleCosmeticInventory;
 import cpw.mods.fml.common.FMLLog;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 
 import java.lang.reflect.Method;
 
@@ -36,6 +38,27 @@ public class BaublesApi
      */
     public static boolean isBaubleRendered(IInventory inventory, int slot) {
         return !(inventory instanceof IBaubleRenderInventory renders) || renders.isSlotRendered(slot);
+    }
+
+    /**
+     * Returns optional cosmetic storage without replacing the functional inventory.
+     */
+    public static IInventory getBaubleCosmetics(EntityPlayer player) {
+        IInventory inventory = getBaubles(player);
+        return inventory instanceof IBaubleCosmeticInventory cosmetics ? cosmetics.getCosmeticInventory() : null;
+    }
+
+    /**
+     * Selects the visible model: a cosmetic replacement, or the functional item when none is stored.
+     * The visibility toggle also hides cosmetic replacements. This is only a rendering query.
+     */
+    public static ItemStack getRenderedBauble(IInventory inventory, int slot) {
+        if (inventory == null || slot < 0 || slot >= inventory.getSizeInventory() || !isBaubleRendered(inventory, slot)) return null;
+        if (inventory instanceof IBaubleCosmeticInventory cosmetics) {
+            ItemStack replacement = cosmetics.getCosmeticInventory().getStackInSlot(slot);
+            if (replacement != null) return replacement;
+        }
+        return inventory.getStackInSlot(slot);
     }
 
 	/**

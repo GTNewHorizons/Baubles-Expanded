@@ -46,6 +46,7 @@ public class Baubles {
 
     public static final Logger log = LogManager.getLogger("Baubles");
     public static final int GUI = 0;
+    public static final int GUI_COSMETICS = 1;
 
     public static final Item itemDebugger = new ItemDebugger().setUnlocalizedName("baubleSlotDebugTool");
 

@@ -9,6 +9,7 @@ import baubles.common.container.ContainerPlayerExpanded;
 import baubles.common.container.SlotBauble;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketToggleBaubleRender;
+import baubles.common.network.PacketToggleBaubleCosmetics;
 import codechicken.lib.vec.Rectangle4i;
 import codechicken.nei.NEIClientConfig;
 import codechicken.nei.VisiblityData;
@@ -30,6 +31,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
@@ -95,9 +97,14 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
     private int tooltipIndexCache = -1;
     private final List<String> tooltipCache = new ArrayList<>(2);
     private int renderToggleMouseButton = -1;
+    private GuiBaubleCosmeticButton cosmeticButton;
 
     public GuiPlayerExpanded(EntityPlayer player) {
-        super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
+        this(player, false);
+    }
+
+    public GuiPlayerExpanded(EntityPlayer player, boolean cosmeticView) {
+        super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player, cosmeticView));
         useOldGuiRendering = ((ContainerPlayerExpanded) inventorySlots).usesOldGuiRendering();
         allowUserInput = true;
     }
@@ -120,6 +127,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
         buttonList.clear();
         renderToggleMouseButton = Mouse.isButtonDown(0) ? 0 : -1;
         super.initGui();
+        cosmeticButton = new GuiBaubleCosmeticButton(56, guiLeft + (useOldGuiRendering ? 80 : -20),
+                guiTop + (useOldGuiRendering ? -18 : -14),
+                ((ContainerPlayerExpanded) inventorySlots).isCosmeticView());
+        buttonList.add(cosmeticButton);
 
         if (!this.mc.thePlayer.getActivePotionEffects().isEmpty() && !useOldGuiRendering) {
             this.showActivePotionEffects = true;
@@ -227,6 +238,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
     @Override
     protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+        drawCosmeticTabBackground();
         if (useOldGuiRendering) {
             mc.getTextureManager().bindTexture(background);
         } else {
@@ -234,12 +246,39 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
         }
 
         this.drawBaubleSlots();
+        drawCosmeticSlotBackgrounds();
         if (showActivePotionEffects) {
             drawPotionEffects();
         }
 
         // Player model
         func_147046_a(guiLeft + 51, guiTop + 75, 30, (float) (guiLeft + 51) - xSizeFloat, (float) (guiTop + 25) - ySizeFloat, mc.thePlayer);
+    }
+
+    private void drawCosmeticTabBackground() {
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_TEXTURE_BIT);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        mc.getTextureManager().bindTexture(COSMETIC_INVENTORY_TEXTURE);
+        drawTexturedModalRect(cosmeticButton.xPosition - 4, cosmeticButton.yPosition - 5, 32, 0, 28, 24);
+        GL11.glPopAttrib();
+    }
+
+    private void drawCosmeticSlotBackgrounds() {
+        ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+        if (!container.isCosmeticView()) return;
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_TEXTURE_BIT);
+        GL11.glDisable(GL11.GL_ALPHA_TEST);
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        mc.getTextureManager().bindTexture(COSMETIC_INVENTORY_TEXTURE);
+        for (int i = 0; i < container.getBaubleSlotCount(); i++) {
+            SlotBauble slot = container.getBaubleSlot(i);
+            if (!isVisibleBaubleSlot(slot)) continue;
+            drawTexturedModalRect(guiLeft + slot.xDisplayPosition - 1, guiTop + slot.yDisplayPosition - 1,
+                    32, 50, 18, 18);
+        }
+        GL11.glPopAttrib();
     }
 
     private void drawBaubleSlots() {
@@ -433,6 +472,10 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
             // Strip formatting codes
             String strippedType = StatCollector.translateToLocal("slot." + slotType).replaceAll("§[0-9a-fklmnor]", "");
             tooltipCache.add(strippedType);
+            if (expandedInventory.isCosmeticView()) {
+                tooltipCache.add(EnumChatFormatting.LIGHT_PURPLE + StatCollector.translateToLocal("tooltip.baubles.cosmetic"));
+            }
+
             ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
 
             if (heldItem != null && heldItem.stackSize > 0) {
@@ -534,6 +577,11 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
 
     @Override
     protected void actionPerformed(GuiButton button) {
+        if (button instanceof GuiBaubleCosmeticButton) {
+            ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+            PacketHandler.INSTANCE.sendToServer(new PacketToggleBaubleCosmetics(container.windowId, container.baubles.getLayoutRevision()));
+            return;
+        }
         if (button.id == 0) {
             mc.displayGuiScreen(new GuiAchievements(this, mc.thePlayer.getStatFileWriter()));
         } else if (button.id == 1) {
@@ -560,6 +608,13 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler, I
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
+        for (Object value : buttonList) {
+            if (value instanceof GuiBaubleCosmeticButton button && button.mousePressed(mc, mouseX, mouseY)) {
+                renderToggleMouseButton = mouseButton;
+                if (mouseButton == 0) actionPerformed(button);
+                return;
+            }
+        }
         SlotBauble toggle = getRenderToggleAt(mouseX, mouseY);
         if (toggle != null) {
             renderToggleMouseButton = mouseButton;
