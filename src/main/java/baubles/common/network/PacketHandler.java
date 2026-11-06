@@ -18,6 +18,8 @@ public class PacketHandler {
         INSTANCE.registerMessage(PacketOpenNormalInventory.class, PacketOpenNormalInventory.class, 1, Side.SERVER);
         INSTANCE.registerMessage(PacketSyncBauble.class, PacketSyncBauble.class, 2, Side.CLIENT);
         INSTANCE.registerMessage(PacketSyncAllBauble.class, PacketSyncAllBauble.class, 3, Side.CLIENT);
+        INSTANCE.registerMessage(PacketToggleBaubleRender.class, PacketToggleBaubleRender.class, 4, Side.SERVER);
+        INSTANCE.registerMessage(PacketSyncBaubleRender.class, PacketSyncBaubleRender.class, 5, Side.CLIENT);
     }
 
     public static void sendToTracking(IMessage message, EntityPlayer target, boolean sendToTarget) {
