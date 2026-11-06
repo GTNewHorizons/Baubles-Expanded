@@ -1,6 +1,7 @@
 package baubles.api;
 
 import baubles.api.expanded.IBaubleSlotInventory;
+import baubles.api.expanded.IBaubleRenderInventory;
 import cpw.mods.fml.common.FMLLog;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
@@ -20,6 +21,21 @@ public class BaublesApi
     public static IBaubleSlotInventory getBaubleSlots(EntityPlayer player) {
         IInventory inventory = getBaubles(player);
         return inventory instanceof IBaubleSlotInventory ? (IBaubleSlotInventory) inventory : null;
+    }
+
+    /**
+     * Returns optional model visibility support from the player's current inventory.
+     */
+    public static IBaubleRenderInventory getBaubleRenders(EntityPlayer player) {
+        IInventory inventory = getBaubles(player);
+        return inventory instanceof IBaubleRenderInventory ? (IBaubleRenderInventory) inventory : null;
+    }
+
+    /**
+     * Checks model visibility using an already resolved inventory. Legacy inventories remain visible.
+     */
+    public static boolean isBaubleRendered(IInventory inventory, int slot) {
+        return !(inventory instanceof IBaubleRenderInventory renders) || renders.isSlotRendered(slot);
     }
 
 	/**

@@ -5,12 +5,14 @@ import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
 import baubles.api.expanded.IBaubleSlotInventory;
+import baubles.api.expanded.IBaubleRenderInventory;
 import baubles.common.Baubles;
 import baubles.common.BaublesConfig;
 import baubles.common.lib.ItemStackHelper;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncAllBauble;
 import baubles.common.network.PacketSyncBauble;
+import baubles.common.network.PacketSyncBaubleRender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,10 +28,11 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Map;
 
-public class InventoryBaubles implements IBaubleSlotInventory {
+public class InventoryBaubles implements IBaubleSlotInventory, IBaubleRenderInventory {
     public ItemStack[] stackList;
     private Container eventHandler;
     public WeakReference<EntityPlayer> player;
@@ -43,6 +46,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
     private boolean oldGuiRendering = BaublesConfig.useOldGuiRendering;
     private WeakReference<EntityPlayer> loadedPlayer = new WeakReference<>(null);
     private final ArrayDeque<ItemStack> pendingReturns = new ArrayDeque<>();
+    private final BitSet hiddenSlots = new BitSet();
 
     public InventoryBaubles(EntityPlayer player) {
         slotState = new BaubleSlotState(BaubleExpandedSlots.getCurrentSlotAssignments(), Collections.emptyMap());
@@ -80,6 +84,39 @@ public class InventoryBaubles implements IBaubleSlotInventory {
 
     public boolean usesOldGuiRendering() {
         return oldGuiRendering;
+    }
+
+    @Override
+    public boolean isSlotRendered(int slot) {
+        return isActiveSlot(slot) && !hiddenSlots.get(slot);
+    }
+
+    @Override
+    public void setSlotRendered(int slot, boolean rendered) {
+        EntityPlayer owner = requireServerPlayer();
+        if (!isActiveSlot(slot)) throw new IllegalArgumentException("Cannot change visibility of an inactive slot");
+        if (isSlotRendered(slot) == rendered) return;
+        hiddenSlots.set(slot, !rendered);
+        markDirty();
+        if (owner instanceof EntityPlayerMP) {
+            PacketHandler.sendToTracking(new PacketSyncBaubleRender(owner, slot), owner, true);
+        }
+    }
+
+    private boolean isActiveSlot(int slot) {
+        return slot >= 0 && slot < getSizeInventory()
+                && !BaubleExpandedSlots.unknownType.equals(getSlotType(slot));
+    }
+
+    public int[] getHiddenSlots() {
+        return hiddenSlots.stream().toArray();
+    }
+
+    public void applyRenderState(int slot, long revision, boolean rendered) {
+        EntityPlayer owner = player.get();
+        if (owner != null && owner.worldObj.isRemote && revision == layoutRevision && isActiveSlot(slot)) {
+            hiddenSlots.set(slot, !rendered);
+        }
     }
 
     @Override
@@ -144,6 +181,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
             layoutRevision++;
             for (int slot = 0; slot < previous.length; slot++) {
                 if (previousState.getType(slot).equals(updated.getType(slot)) && slot < stackList.length) continue;
+                hiddenSlots.clear(slot);
                 ItemStack stack = previous[slot];
                 if (slot < stackList.length) stackList[slot] = null;
                 if (stack != null) {
@@ -227,6 +265,10 @@ public class InventoryBaubles implements IBaubleSlotInventory {
     }
 
     public void applySnapshot(BaubleSlotState state, long revision, ItemStack[] stacks, boolean oldGui) {
+        applySnapshot(state, revision, stacks, oldGui, new int[0]);
+    }
+
+    public void applySnapshot(BaubleSlotState state, long revision, ItemStack[] stacks, boolean oldGui, int[] hidden) {
         EntityPlayer owner = player.get();
         if (owner == null || !owner.worldObj.isRemote) return;
         if (loadedPlayer.get() == owner && revision < layoutRevision) return;
@@ -240,6 +282,10 @@ public class InventoryBaubles implements IBaubleSlotInventory {
         stackList = stacks.clone();
         layoutRevision = revision;
         oldGuiRendering = oldGui;
+        hiddenSlots.clear();
+        for (int slot : hidden) {
+            if (isActiveSlot(slot)) hiddenSlots.set(slot);
+        }
         for (int slot = 0; slot < Math.max(previous.length, stacks.length); slot++) {
             ItemStack before = slot < previous.length ? previous[slot] : null;
             ItemStack after = getStackInSlot(slot);
@@ -462,6 +508,7 @@ public class InventoryBaubles implements IBaubleSlotInventory {
 
     public void saveNBT(NBTTagCompound tags) {
         BaubleSlotStorage.write(tags, new BaubleSlotState(slotState.getAssignments(), getPendingSlotState().getModifiers()));
+        tags.setIntArray("Baubles.HiddenSlots", getHiddenSlots());
         NBTTagList tagList = new NBTTagList();
         NBTTagCompound invSlot;
         for (int slot = 0; slot < stackList.length; ++slot) {
@@ -491,6 +538,10 @@ public class InventoryBaubles implements IBaubleSlotInventory {
                 saved.getAssignments(), saved.getModifiers());
         stackList = new ItemStack[slotState.getAssignments().length];
         pendingReturns.clear();
+        hiddenSlots.clear();
+        for (int slot : tags.getIntArray("Baubles.HiddenSlots")) {
+            if (isActiveSlot(slot) && saved.getType(slot).equals(getSlotType(slot))) hiddenSlots.set(slot);
+        }
         NBTTagList tagList = tags.getTagList("Baubles.Inventory", 10);
         for (int i = 0; i < tagList.tagCount(); ++i) {
             NBTTagCompound nbttagcompound = tagList.getCompoundTagAt(i);
