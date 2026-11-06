@@ -79,7 +79,7 @@ public class GuiEvents {
             inventory.drawRenderToggleTooltip(event.mouseX, event.mouseY);
         }
         for (GuiButton button : GuiScreenReflectionHelper.getButtons(event.gui)) {
-            if ((button instanceof GuiBaublesButton) && button.visible && button.func_146115_a()) {
+            if ((button instanceof GuiBaublesButton || button instanceof GuiBaubleCosmeticButton) && button.visible && button.func_146115_a()) {
                 GuiScreenReflectionHelper.drawTooltip(event.gui, Collections.singletonList(button.displayString),
                     event.mouseX, event.mouseY);
                 return;

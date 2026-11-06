@@ -30,6 +30,7 @@ public class ClientProxy extends CommonProxy {
 		if (world instanceof WorldClient) {
 			switch (ID) {
 				case Baubles.GUI: return new GuiPlayerExpanded(player);
+				case Baubles.GUI_COSMETICS: return new GuiPlayerExpanded(player, true);
 			}
 		}
 		return null;

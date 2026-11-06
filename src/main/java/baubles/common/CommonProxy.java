@@ -23,8 +23,8 @@ public class CommonProxy implements IGuiHandler {
 
 	@Override
 	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-        if(ID == Baubles.GUI) {
-            return new ContainerPlayerExpanded(player.inventory, !world.isRemote, player);
+        if(ID == Baubles.GUI || ID == Baubles.GUI_COSMETICS) {
+            return new ContainerPlayerExpanded(player.inventory, !world.isRemote, player, ID == Baubles.GUI_COSMETICS);
         }
 		return null;
 	}
