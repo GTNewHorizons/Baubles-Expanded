@@ -10,7 +10,8 @@ button.normal=Normal
 keybind.baublesinventory=Baubles Inventory
 #
 # Tooltips
-tooltip.compatibleslots=Equippable in the following slots:
+tooltip.compatibleslots=Slot:
+tooltip.allslots=All bauble slots
 tooltip.shiftprompt=Hold §bSHIFT§7 for more info.
 tooltip.fitsInSlot=§aValid slot§r
 tooltip.doesNotFitInSlot=§cInvalid slot§r
