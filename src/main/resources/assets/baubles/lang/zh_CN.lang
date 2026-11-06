@@ -10,7 +10,8 @@ button.normal=普通
 keybind.baublesinventory=饰品栏
 #
 # Tooltips
-tooltip.compatibleslots=装备在这些插槽:
+tooltip.compatibleslots=栏位:
+tooltip.allslots=所有饰品槽位
 tooltip.shiftprompt=按住 §bSHIFT§7 以显示更多信息
 #
 # Slots
@@ -29,6 +30,7 @@ slot.leggings=§a护腿§7
 slot.quiver=§a箭筒§7
 slot.ring=§a戒指§7
 slot.shield=§a盾牌§7
+slot.universal=§a通用§7
 slot.unknown=§a未知§7
 slot.wings=§a翅膀§7
 

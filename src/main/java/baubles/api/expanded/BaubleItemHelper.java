@@ -1,22 +1,26 @@
 package baubles.api.expanded;
 
 import baubles.api.BaublesApi;
-import baubles.common.BaublesConfig;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class BaubleItemHelper {
 
     /**
-     * Adds compatible slot information to an item's tooltip, but only when shift is held.
+     * Adds one compact line of compatible slots below the item name.
+     * Empty and inactive types do not add a tooltip. Repeated identical entries are ignored.
      *
      * @param tooltip The tooltip list.
      * @param types The item's types.
@@ -25,17 +29,28 @@ public class BaubleItemHelper {
     @SideOnly(Side.CLIENT)
     public static boolean addSlotInformation(List<String> tooltip, String[] types) {
         boolean shiftHeld = GuiScreen.isShiftKeyDown();
-        if(shiftHeld) {
-            tooltip.add(StatCollector.translateToLocal("tooltip.compatibleslots"));
-            String[] displayTypes = BaublesConfig.getDisplayTypesWithUniversalOverrides(types);
-            for(int i = 0; i < displayTypes.length; i++) {
-                String type = StatCollector.translateToLocal("slot." + displayTypes[i]);
-                if(i < displayTypes.length - 1) type += ",";
-                tooltip.add(type);
+        if (types == null || types.length == 0) return shiftHeld;
+        Set<String> names = new LinkedHashSet<>();
+        for (String type : types) {
+            if (type == null) continue;
+            type = type.trim();
+            if (type.isEmpty() || BaubleExpandedSlots.unknownType.equals(type)) continue;
+            String key = "slot." + type;
+            String name = StatCollector.canTranslate(key) ? StatCollector.translateToLocal(key)
+                    : type.substring(0, 1).toUpperCase(Locale.ROOT) + type.substring(1).toLowerCase(Locale.ROOT);
+            name = EnumChatFormatting.getTextWithoutFormattingCodes(name);
+            if (BaubleExpandedSlots.universalType.equals(type)) {
+                names.clear();
+                names.add(name);
+                break;
             }
-        } else {
-            tooltip.add(StatCollector.translateToLocal("tooltip.shiftprompt"));
+            names.add(name);
         }
+        if (names.isEmpty()) return shiftHeld;
+
+        String text = EnumChatFormatting.GOLD + StatCollector.translateToLocal("tooltip.compatibleslots") + " "
+                + EnumChatFormatting.YELLOW + String.join(", ", names);
+        if (!tooltip.contains(text)) tooltip.add(Math.min(1, tooltip.size()), text);
         return shiftHeld;
     }
 
