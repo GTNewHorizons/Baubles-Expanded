@@ -45,7 +45,7 @@ public class SlotBauble extends Slot {
      */
     @Override
     public boolean isItemValid(ItemStack stack) {
-    	if (stack == null) {
+        if (stack == null || BaubleExpandedSlots.unknownType.equals(slotType)) {
 			return false;
 		}
 
@@ -62,6 +62,7 @@ public class SlotBauble extends Slot {
             types = new String[] {BaubleExpandedSlots.getTypeFromBaubleType(legacyType)};
         }
 
+        if (types == null) return false;
         for(String type : types) {
             if (BaublesConfig.canTypeFitSlot(type, slotType)) {
                 return true;
@@ -75,15 +76,9 @@ public class SlotBauble extends Slot {
 	public void onSlotChanged() {
 		super.onSlotChanged();
 
-		ItemStack stack = getStack();
-		if (stack == null || !(stack.getItem() instanceof IBaubleExpanded bauble)
-				|| !(inventory instanceof InventoryBaubles baubleInventory)) {
-			return;
-		}
-		EntityPlayer player = baubleInventory.player.get();
-		if (player != null) {
-			bauble.onSlotContentsChanged(stack, player);
-		}
+        if (inventory instanceof InventoryBaubles baubleInventory) {
+            baubleInventory.onSlotContentsChanged(getSlotIndex());
+        }
 	}
 
 	@Override

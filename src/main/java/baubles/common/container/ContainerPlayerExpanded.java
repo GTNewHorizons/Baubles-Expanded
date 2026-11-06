@@ -21,8 +21,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.util.IIcon;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static baubles.common.BaublesConfig.maxColumns;
-import static baubles.common.BaublesConfig.useOldGuiRendering;
 
 public class ContainerPlayerExpanded extends Container {
 
@@ -31,6 +33,9 @@ public class ContainerPlayerExpanded extends Container {
     public InventoryBaubles baubles;
 
     private final EntityPlayer thePlayer;
+    private final boolean useOldGuiRendering;
+    private final long layoutRevision;
+    private final List<SlotBauble> visibleBaubleSlots = new ArrayList<>();
 
     private int slotsAdded = 0;
 
@@ -40,6 +45,8 @@ public class ContainerPlayerExpanded extends Container {
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean isClient, EntityPlayer player) {
         this.thePlayer = player;
         baubles = PlayerHandler.getPlayerBaubles(player);
+        useOldGuiRendering = baubles.usesOldGuiRendering();
+        layoutRevision = baubles.getLayoutRevision();
         baubles.setEventHandler(this);
 
         int i;
@@ -83,15 +90,22 @@ public class ContainerPlayerExpanded extends Container {
 
         // Bauble slots
         baubleFirstSlotIndex = slotsAdded;
-        String[] currentSlotAssignments = BaubleExpandedSlots.getCurrentSlotAssignments();
-        for (String slotType: currentSlotAssignments) {
-            if (BaublesConfig.showUnusedSlots || !slotType.equals(BaubleExpandedSlots.unknownType)) {
-                Slot slot = useOldGuiRendering
-                    ? new SlotBauble(baubles, slotType, baubleSlotCount, slotStartX + (slotOffset * (baubleSlotCount / 4)), slotStartY + (slotOffset * (baubleSlotCount % 4)))
-                    : new SlotBauble(baubles, slotType, baubleSlotCount, -18 - (18 * (baubleSlotCount % getColumns())), 12 + (slotOffset * (baubleSlotCount / getColumns())));
-                addSlotToContainer(slot);
-                baubleSlotCount++;
-            }
+        String[] currentSlotAssignments = baubles.getSlotAssignments();
+        for (String type : currentSlotAssignments) {
+            if (BaublesConfig.showUnusedSlots || !BaubleExpandedSlots.unknownType.equals(type)) baubleSlotCount++;
+        }
+        int visibleIndex = 0;
+        for (int index = 0; index < currentSlotAssignments.length; index++) {
+            String type = currentSlotAssignments[index];
+            boolean visible = BaublesConfig.showUnusedSlots || !BaubleExpandedSlots.unknownType.equals(type);
+            int x = useOldGuiRendering ? slotStartX + slotOffset * (visibleIndex / 4) : -18 - 18 * (visibleIndex % getColumns());
+            int y = useOldGuiRendering ? slotStartY + slotOffset * (visibleIndex % 4) : 12 + slotOffset * (visibleIndex / getColumns());
+            SlotBauble slot = new SlotBauble(baubles, type, index, x, y);
+            addSlotToContainer(slot);
+            if (visible) {
+                visibleBaubleSlots.add(slot);
+                visibleIndex++;
+            } else slot.yDisplayPosition = -2000;
         }
 
         // Inventory slots
@@ -128,7 +142,10 @@ public class ContainerPlayerExpanded extends Container {
 
     @Override
     public void onContainerClosed(EntityPlayer player) {
+        ItemStack cursor = player.inventory.getItemStack();
+        player.inventory.setItemStack(null);
         super.onContainerClosed(player);
+        if (cursor != null && !player.worldObj.isRemote) PlayerHandler.getPlayerBaubles(player).returnItem(cursor);
 
         if (baubles != null && baubles.getEventHandler() == this) {
             baubles.setEventHandler(null);
@@ -140,17 +157,10 @@ public class ContainerPlayerExpanded extends Container {
         for (int i = 0; i < 4; ++i) {
             ItemStack itemstack = this.craftMatrix.getStackInSlotOnClosing(i);
 
-            if (itemstack != null) {
-                if (!player.inventory.addItemStackToInventory(itemstack)) {
-                    player.dropPlayerItemWithRandomChoice(itemstack, false);
-                }
-            }
+            if (itemstack != null && !player.worldObj.isRemote) PlayerHandler.getPlayerBaubles(player).returnItem(itemstack);
         }
 
         this.craftResult.setInventorySlotContents(0, null);
-        if (!player.worldObj.isRemote) {
-            PlayerHandler.setPlayerBaubles(player, baubles);
-        }
     }
 
     public int getBaubleSlotCount() {
@@ -159,12 +169,16 @@ public class ContainerPlayerExpanded extends Container {
 
     public SlotBauble getBaubleSlot(int slotIndex) {
         if(slotIndex < 0 || slotIndex >= baubleSlotCount) return null;
-        return (SlotBauble) inventorySlots.get(baubleFirstSlotIndex + slotIndex);
+        return visibleBaubleSlots.get(slotIndex);
+    }
+
+    public boolean usesOldGuiRendering() {
+        return useOldGuiRendering;
     }
 
     public void scrollTo(float offset) {
         if (!canScroll()) return;
-        final int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        final int activeBaubleSlots = baubleSlotCount;
         final int columns = getColumns();
 
         offset = Math.max(0, Math.min(1, offset));
@@ -177,8 +191,8 @@ public class ContainerPlayerExpanded extends Container {
             slotRowOffset = 0;
         }
 
-        for (int i = 0; i < activeBaubleSlots && i < BaubleExpandedSlots.slotsCurrentlyUsed(); i++) {
-            Slot slot = (Slot) this.inventorySlots.get(baubleFirstSlotIndex + i);
+        for (int i = 0; i < activeBaubleSlots; i++) {
+            Slot slot = visibleBaubleSlots.get(i);
             int row = i / columns;
             int scrolledRow = row - slotRowOffset;
             slot.yDisplayPosition = 12 + scrolledRow * 18;
@@ -189,7 +203,7 @@ public class ContainerPlayerExpanded extends Container {
     }
 
     public int getColumns() {
-        int activeBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        int activeBaubleSlots = baubleSlotCount;
         for (int cols = 1; cols < maxColumns; cols++) {
             if ((activeBaubleSlots + cols - 1) / cols <= 8) {
                 return cols;
@@ -199,12 +213,22 @@ public class ContainerPlayerExpanded extends Container {
     }
 
     public boolean canScroll() {
-        return BaubleExpandedSlots.slotsCurrentlyUsed() > maxColumns * 8 && !useOldGuiRendering;
+        return baubleSlotCount > (long) maxColumns * 8 && !useOldGuiRendering;
     }
 
     @Override
     public boolean canInteractWith(EntityPlayer player) {
-        return true;
+        return player == thePlayer && player.isEntityAlive() && baubles == PlayerHandler.getPlayerBaubles(player)
+            && layoutRevision == baubles.getLayoutRevision();
+    }
+
+    @Override
+    public ItemStack slotClick(int slot, int button, int mode, EntityPlayer player) {
+        if (!canInteractWith(player) || slot >= inventorySlots.size() || slot < -1 && slot != -999
+                || mode < 0 || mode > 6 || button < 0) return null;
+        if (mode == 2 ? button > 8 : mode == 3 ? button != 2
+                : mode == 5 ? button > 10 || (button & 3) > 2 : button > 1) return null;
+        return super.slotClick(slot, button, mode, player);
     }
 
     /**
@@ -212,15 +236,16 @@ public class ContainerPlayerExpanded extends Container {
      */
     @Override
     public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex) {
+        if (!canInteractWith(player) || slotIndex < 0 || slotIndex >= inventorySlots.size()) return null;
         ItemStack returnStack = null;
         Slot slot = (Slot) inventorySlots.get(slotIndex);
-        final int visibleBaubleSlots = BaubleExpandedSlots.slotsCurrentlyUsed();
+        final int visibleBaubleSlots = baubles.getSizeInventory();
         int craftingActive = 5;
         if (useOldGuiRendering) {
             craftingActive = 0;
         }
 
-        if (slot == null || !slot.getHasStack()) {
+        if (slot == null || !slot.getHasStack() || !slot.canTakeStack(player)) {
             return returnStack;
         }
         ItemStack originalStack = slot.getStack();
@@ -242,9 +267,11 @@ public class ContainerPlayerExpanded extends Container {
                 return null;
             }
         } else if (slotIndex >= baubleStart && slotIndex < baubleEnd) {
-            if (!mergeItemStack(originalStack, baubleEnd, hotbarEnd, false, slot)) {
-                returnStack = null;
-            }
+            ItemStack remaining = originalStack.copy();
+            if (!mergeItemStack(remaining, baubleEnd, hotbarEnd, false, slot)) return null;
+            ItemStack removed = slot.decrStackSize(originalStack.stackSize - remaining.stackSize);
+            slot.onPickupFromSlot(player, removed);
+            return returnStack;
         } else if (item instanceof ItemArmor armor
                 && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
             int armorSlot = craftingActive + armor.armorType;
@@ -255,6 +282,7 @@ public class ContainerPlayerExpanded extends Container {
             String[] types = item instanceof IBaubleExpanded
                 ? ((IBaubleExpanded) item).getBaubleTypes(returnStack)
                 : new String[] {BaubleExpandedSlots.getTypeFromBaubleType(bauble.getBaubleType(returnStack))};
+            if (types == null) return null;
 
             // Priority 2: direct slot matches (or universal items)
             tryMergeIntoBaubleSlotsByPriority(originalStack, baubleStart, baubleEnd, types, 2);
@@ -290,16 +318,15 @@ public class ContainerPlayerExpanded extends Container {
         return returnStack;
     }
 
-    private void unequipBauble(ItemStack stack) {
-        //if (stack.getItem() instanceof IBauble) {
-        //    ((IBauble)stack.getItem()).onUnequipped(stack, thePlayer);
-        //}
-    }
-
     @Override
     public void putStacksInSlots(ItemStack[] p_75131_1_) {
+        boolean previous = baubles.blockEvents;
         baubles.blockEvents = true;
-        super.putStacksInSlots(p_75131_1_);
+        try {
+            super.putStacksInSlots(p_75131_1_);
+        } finally {
+            baubles.blockEvents = previous;
+        }
     }
 
     private void tryMergeIntoBaubleSlotsByPriority(ItemStack sourceStack, int baubleStart, int baubleEnd, String[] itemTypes, int priority) {
@@ -350,67 +377,38 @@ public class ContainerPlayerExpanded extends Container {
         return best;
     }
 
-    protected boolean mergeItemStack(ItemStack sourceStack, int startIndex, int endIndex, boolean reverse, Slot sourceSlot) {
+    @Override
+    protected boolean mergeItemStack(ItemStack sourceStack, int startIndex, int endIndex, boolean reverse) {
         boolean merged = false;
-        int index = reverse ? endIndex - 1 : startIndex;
-
-        Slot targetSlot;
-        ItemStack targetStack;
-
-        // First pass: try stacking into existing stacks
-        if (sourceStack.isStackable()) {
-            while (sourceStack.stackSize > 0 && (!reverse && index < endIndex || reverse && index >= startIndex)) {
-                targetSlot = (Slot) inventorySlots.get(index);
-                targetStack = targetSlot.getStack();
-
-                if (targetStack != null && targetStack.getItem() == sourceStack.getItem() &&
-                    (!sourceStack.getHasSubtypes() || sourceStack.getItemDamage() == targetStack.getItemDamage()) &&
-                    ItemStack.areItemStackTagsEqual(sourceStack, targetStack)) {
-
-                    int combinedSize = targetStack.stackSize + sourceStack.stackSize;
-
-                    if (combinedSize <= sourceStack.getMaxStackSize()) {
-                        if (sourceSlot instanceof SlotBauble) {
-                            unequipBauble(sourceStack);
-                        }
-                        sourceStack.stackSize = 0;
-                        targetStack.stackSize = combinedSize;
-                        targetSlot.onSlotChanged();
-                        return true;
-                    } else if (targetStack.stackSize < sourceStack.getMaxStackSize()) {
-                        if (sourceSlot instanceof SlotBauble) {
-                            unequipBauble(sourceStack);
-                        }
-                        sourceStack.stackSize -= sourceStack.getMaxStackSize() - targetStack.stackSize;
-                        targetStack.stackSize = sourceStack.getMaxStackSize();
-                        targetSlot.onSlotChanged();
-                        merged = true;
-                    }
+        for (int pass = 0; pass < 2 && sourceStack.stackSize > 0; pass++) {
+            for (int index = reverse ? endIndex - 1 : startIndex;
+                    sourceStack.stackSize > 0 && index >= startIndex && index < endIndex;
+                    index += reverse ? -1 : 1) {
+                Slot targetSlot = (Slot) inventorySlots.get(index);
+                ItemStack targetStack = targetSlot.getStack();
+                if ((pass == 0) != (targetStack != null) || !targetSlot.isItemValid(sourceStack)) continue;
+                int limit = Math.min(sourceStack.getMaxStackSize(), targetSlot.getSlotStackLimit());
+                if (targetStack != null) {
+                    if (!sourceStack.isStackable() || !sourceStack.isItemEqual(targetStack)
+                            || !ItemStack.areItemStackTagsEqual(sourceStack, targetStack)) continue;
+                    int moved = Math.min(sourceStack.stackSize, limit - targetStack.stackSize);
+                    if (moved <= 0) continue;
+                    sourceStack.stackSize -= moved;
+                    targetStack.stackSize += moved;
+                    targetSlot.onSlotChanged();
+                } else {
+                    int moved = Math.min(sourceStack.stackSize, limit);
+                    if (moved <= 0) continue;
+                    ItemStack inserted = sourceStack.splitStack(moved);
+                    targetSlot.putStack(inserted);
                 }
-
-                index = reverse ? index - 1 : index + 1;
+                merged = true;
             }
         }
-
-        // Second pass: put into empty slots
-        index = reverse ? endIndex - 1 : startIndex;
-        while (!reverse && index < endIndex || reverse && index >= startIndex) {
-            targetSlot = (Slot) inventorySlots.get(index);
-            targetStack = targetSlot.getStack();
-
-            if (targetStack == null) {
-                if (sourceSlot instanceof SlotBauble) {
-                    unequipBauble(sourceStack);
-                }
-                targetSlot.putStack(sourceStack.copy());
-                targetSlot.onSlotChanged();
-                sourceStack.stackSize = 0;
-                return true;
-            }
-
-            index = reverse ? index - 1 : index + 1;
-        }
-
         return merged;
+    }
+
+    protected boolean mergeItemStack(ItemStack sourceStack, int startIndex, int endIndex, boolean reverse, Slot sourceSlot) {
+        return mergeItemStack(sourceStack, startIndex, endIndex, reverse);
     }
 }
