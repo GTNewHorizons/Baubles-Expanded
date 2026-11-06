@@ -1,11 +1,10 @@
 package baubles.common;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 
 import baubles.api.expanded.BaubleExpandedSlots;
+import baubles.api.expanded.BaubleSlotType;
 import net.minecraftforge.common.config.Configuration;
 
 public class BaublesConfig {
@@ -22,8 +21,6 @@ public class BaublesConfig {
     public static boolean displayTooltipOnHover = true;
     public static String[] slotStackLimitOverrides = new String[] {};
     public static String[] slotUniversalOverrides = new String[] {};
-    private static final Map<String, Integer> stackLimitsByType = new HashMap<>();
-    private static final ArrayList<String> universalOverrideTypes = new ArrayList<>();
 
     public static String[] overrideSlotTypes = new String[] {
         BaubleExpandedSlots.amuletType,
@@ -90,50 +87,7 @@ public class BaublesConfig {
             currentlyRegisteredTypes.toArray(new String[0])
         );
 
-        stackLimitsByType.clear();
-        universalOverrideTypes.clear();
-        for (String type : slotUniversalOverrides) {
-            if (type == null) continue;
-            String trimmedType = type.trim();
-            if (trimmedType.isEmpty()) continue;
-            if (!BaubleExpandedSlots.isTypeRegistered(trimmedType)) {
-                Baubles.log.warn("Ignoring slotUniversalOverrides entry '{}': unknown slot type '{}'", type, trimmedType);
-                continue;
-            }
-            if (trimmedType.equals(BaubleExpandedSlots.universalType) || trimmedType.equals(BaubleExpandedSlots.unknownType)) {
-                continue;
-            }
-            if (!universalOverrideTypes.contains(trimmedType)) {
-                universalOverrideTypes.add(trimmedType);
-            }
-        }
-
-        for (String entry : slotStackLimitOverrides) {
-            if (entry == null) continue;
-            String[] split = entry.split("=", 2);
-            if (split.length != 2) {
-                Baubles.log.warn("Ignoring malformed slotStackLimitOverrides entry '{}'. Expected format: type=limit", entry);
-                continue;
-            }
-            String type = split[0].trim();
-            String limitText = split[1].trim();
-            if (!BaubleExpandedSlots.isTypeRegistered(type)) {
-                Baubles.log.warn("Ignoring slotStackLimitOverrides entry '{}': unknown slot type '{}'", entry, type);
-                continue;
-            }
-            try {
-                int limit = Integer.parseInt(limitText);
-                if (limit > 0) {
-                    stackLimitsByType.put(type, limit);
-                }
-            } catch (NumberFormatException ignored) {
-                Baubles.log.warn("Ignoring slotStackLimitOverrides entry '{}': '{}' is not a valid integer", entry, limitText);
-            }
-        }
-
-        if(manualSlotSelection) {
-            BaubleExpandedSlots.overrideSlots(overrideSlotTypes);
-        }
+        BaubleSlotConfiguration.initialize(config);
 
         if(config.hasChanged()) {
             config.save();
@@ -142,7 +96,8 @@ public class BaublesConfig {
 
     public static int getStackLimitForSlotType(String type) {
         if (type == null) return 1;
-        return stackLimitsByType.getOrDefault(type, 1);
+        BaubleSlotType definition = BaubleSlotConfiguration.getDefinitions().get(type);
+        return definition == null ? 1 : definition.stackLimit();
     }
 
     public static boolean canTypeFitSlot(String itemType, String slotType) {
@@ -152,7 +107,8 @@ public class BaublesConfig {
         if (itemType.equals(BaubleExpandedSlots.universalType) || itemType.equals(slotType)) {
             return true;
         }
-        return slotType.equals(BaubleExpandedSlots.universalType) && universalOverrideTypes.contains(itemType);
+        BaubleSlotType definition = BaubleSlotConfiguration.getDefinitions().get(itemType);
+        return slotType.equals(BaubleExpandedSlots.universalType) && definition != null && definition.fitsUniversal();
     }
 
     public static String[] getDisplayTypesWithUniversalOverrides(String[] types) {
@@ -165,7 +121,7 @@ public class BaublesConfig {
             String trimmed = type.trim();
             if (trimmed.isEmpty()) continue;
             displayTypes.add(trimmed);
-            if (universalOverrideTypes.contains(trimmed)) {
+            if (canTypeFitSlot(trimmed, BaubleExpandedSlots.universalType)) {
                 displayTypes.add(BaubleExpandedSlots.universalType);
             }
         }

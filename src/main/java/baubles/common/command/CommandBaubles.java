@@ -6,6 +6,8 @@ import java.util.List;
 import baubles.api.BaublesApi;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleSlotInventory;
+import baubles.api.expanded.IBaubleSlotSettings;
+import baubles.common.BaubleSlotConfiguration;
 import baubles.common.container.BaubleSlotState;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -38,6 +40,44 @@ public class CommandBaubles extends CommandBase {
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length == 0) throw new WrongUsageException(getCommandUsage(sender));
         String operation = args[0];
+        if ("reload".equals(operation)) {
+            if (args.length != 1) throw new WrongUsageException(getCommandUsage(sender));
+            try {
+                BaubleSlotConfiguration.reload();
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                throw new CommandException("commands.baubles.invalid", e.getMessage());
+            }
+            func_152373_a(sender, this, "commands.baubles.reloaded");
+            return;
+        }
+        if (isActivationCommand(operation)) {
+            if (args.length < 3 || args.length > 4) throw new WrongUsageException(getCommandUsage(sender));
+            validateType(args[1]);
+            EntityPlayerMP player = getPlayer(sender, args[2]);
+            IBaubleSlotSettings settings = BaublesApi.getBaubleSlotSettings(player);
+            if (settings == null) throw new CommandException("commands.baubles.unavailable");
+            boolean active = "activate".equals(operation);
+            try {
+                if (args.length == 3) settings.setSlotsActive(args[1], active);
+                else {
+                    int index = parseIntBounded(sender, args[3], 0, BaubleSlotState.MAX_SLOTS - 1);
+                    int matching = 0;
+                    int target = -1;
+                    for (int slot = 0; slot < settings.getSizeInventory(); slot++) {
+                        if (args[1].equals(settings.getSlotType(slot)) && matching++ == index) {
+                            target = slot;
+                            break;
+                        }
+                    }
+                    if (target == -1) throw new IllegalArgumentException("Slot index is not present: " + index);
+                    settings.setSlotActive(target, active);
+                }
+            } catch (IllegalArgumentException e) {
+                throw new CommandException("commands.baubles.invalid", e.getMessage());
+            }
+            func_152373_a(sender, this, "commands.baubles.active", player.getCommandSenderName(), args[1], active);
+            return;
+        }
         if ("list".equals(operation)) {
             if (args.length > 2) throw new WrongUsageException(getCommandUsage(sender));
             IBaubleSlotInventory inventory = args.length == 2 ? inventory(getPlayer(sender, args[1])) : null;
@@ -104,11 +144,11 @@ public class CommandBaubles extends CommandBase {
 
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
-        if (args.length == 1) return getListOfStringsMatchingLastWord(args, "list", "set", "add", "remove", "reset");
+        if (args.length == 1) return getListOfStringsMatchingLastWord(args, "list", "set", "add", "remove", "reset", "reload", "activate", "deactivate");
         if (isUsernameIndex(args, args.length - 1)) {
             return getListOfStringsMatchingLastWord(args, MinecraftServer.getServer().getAllUsernames());
         }
-        if ((args.length == 2 && isCapacityCommand(args[0])) || (args.length == 3 && "reset".equals(args[0]))) {
+        if ((args.length == 2 && (isCapacityCommand(args[0]) || isActivationCommand(args[0]))) || (args.length == 3 && "reset".equals(args[0]))) {
             List<String> types = new ArrayList<>(BaubleExpandedSlots.getCurrentlyRegisteredTypes());
             types.remove(BaubleExpandedSlots.unknownType);
             return getListOfStringsFromIterableMatchingLastWord(args, types);
@@ -119,7 +159,11 @@ public class CommandBaubles extends CommandBase {
     @Override
     public boolean isUsernameIndex(String[] args, int index) {
         return args.length > 0 && (index == 1 && ("list".equals(args[0]) || "reset".equals(args[0]))
-                || index == 2 && isCapacityCommand(args[0]));
+                || index == 2 && (isCapacityCommand(args[0]) || isActivationCommand(args[0])));
+    }
+
+    private boolean isActivationCommand(String operation) {
+        return "activate".equals(operation) || "deactivate".equals(operation);
     }
 
     private boolean isCapacityCommand(String operation) {

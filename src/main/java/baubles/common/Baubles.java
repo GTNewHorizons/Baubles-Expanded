@@ -13,6 +13,7 @@ import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
@@ -81,6 +82,11 @@ public class Baubles {
     @Mod.EventHandler
     public void onServerStopped(FMLServerStoppedEvent event) {
         PlayerHandler.clearServerPlayerBaubles();
+    }
+
+    @Mod.EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        BaubleSlotConfiguration.finishInitialization();
     }
 
     @Mod.EventHandler

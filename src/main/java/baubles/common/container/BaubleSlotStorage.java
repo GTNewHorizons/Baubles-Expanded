@@ -2,8 +2,10 @@ package baubles.common.container;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.BitSet;
 
 import baubles.api.expanded.BaubleExpandedSlots;
+import baubles.common.BaubleSlotConfiguration;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
@@ -25,6 +27,7 @@ public class BaubleSlotStorage {
             }
         }
         tags.setTag("Baubles.SlotModifiers", modifiers);
+        tags.setIntArray("Baubles.InactiveSlots", state.getInactiveSlots().stream().toArray());
     }
 
     public static BaubleSlotState read(NBTTagCompound tags) {
@@ -46,6 +49,11 @@ public class BaubleSlotStorage {
             modifiers.computeIfAbsent(entry.getString("Type"), key -> new LinkedHashMap<>())
                     .put(source, entry.getInteger("Amount"));
         }
-        return new BaubleSlotState(assignments, modifiers);
+        BitSet inactive = new BitSet();
+        for (int slot : tags.getIntArray("Baubles.InactiveSlots")) {
+            if (slot >= 0 && slot < assignments.length) inactive.set(slot);
+        }
+        return new BaubleSlotState(assignments, modifiers,
+                BaubleSlotConfiguration.getDefinitions(), inactive);
     }
 }

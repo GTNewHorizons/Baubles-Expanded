@@ -32,9 +32,12 @@ slot.shield=§a盾牌§7
 slot.unknown=§a未知§7
 slot.wings=§a翅膀§7
 
-commands.baubles.usage=/baubles list [玩家] | set/add/remove <槽位类型> <玩家> [数量] | reset <玩家> [槽位类型]
+commands.baubles.usage=/baubles list [玩家] | set/add/remove <槽位类型> <玩家> [数量] | reset <玩家> [槽位类型] | reload | activate/deactivate <slot> <player> [index]
 commands.baubles.changed=%s 的 %s 槽位数量现为 %s
 commands.baubles.reset=已重置 %s 的指令槽位修饰器
 commands.baubles.invalid=无法修改槽位：%s
 commands.baubles.type=未知的饰品槽位类型：%s
 commands.baubles.unavailable=此玩家的饰品背包不支持动态槽位
+tooltip.baubles.inactive=已停用的槽位
+commands.baubles.reloaded=已重新加载饰品槽位配置
+commands.baubles.active=已设置 %s 的 %s 槽位启用状态为 %s

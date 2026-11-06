@@ -1,7 +1,5 @@
 package baubles.common.event;
 
-import baubles.api.IBauble;
-import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
 import baubles.common.lib.PlayerHandler;
 import baubles.common.network.PacketHandler;
@@ -13,7 +11,6 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 
 public class EventHandlerNetwork {
 
@@ -24,13 +21,8 @@ public class EventHandlerNetwork {
 			// Apply all baubles
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(event.player);
             baubles.returnOverflowItems();
+            baubles.onPlayerLoaded();
             PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(event.player), ((EntityPlayerMP) event.player));
-			for (int i = 0; i < baubles.getSizeInventory(); i++) {
-				ItemStack stack = baubles.getStackInSlot(i);
-				if (stack != null && stack.getItem() instanceof IBauble itemBauble) {
-					itemBauble.onPlayerLoad(stack, event.player);
-				}
-			}
 
 		}
 	}
@@ -53,16 +45,7 @@ public class EventHandlerNetwork {
         if (event.player instanceof EntityPlayerMP playerMP) {
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(playerMP);
             baubles.returnOverflowItems();
-            for (int slot = 0; slot < baubles.getSizeInventory(); slot++) {
-                ItemStack stack = baubles.getStackInSlot(slot);
-                if (stack != null && stack.getItem() instanceof IBauble item) {
-                    try {
-                        item.onPlayerLoad(stack, playerMP);
-                    } catch (Exception e) {
-                        Baubles.log.error("Error restoring bauble after respawn {}", stack, e);
-                    }
-                }
-            }
+            baubles.onPlayerLoaded();
             PacketHandler.sendToTracking(new PacketSyncAllBauble(playerMP), playerMP, true);
         }
     }
