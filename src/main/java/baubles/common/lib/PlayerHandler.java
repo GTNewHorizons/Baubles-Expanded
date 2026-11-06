@@ -1,13 +1,5 @@
 package baubles.common.lib;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.lang.ref.WeakReference;
-import java.util.HashMap;
-
-import com.google.common.io.Files;
-
 import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
 import net.minecraft.entity.player.EntityPlayer;
@@ -15,6 +7,17 @@ import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.ref.WeakReference;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 
 public class PlayerHandler {
 
@@ -83,11 +86,10 @@ public class PlayerHandler {
     }
 
 	public static InventoryBaubles getPlayerBaubles(EntityPlayer player) {
-		if (player.worldObj.isRemote) {
-			return playerBaublesClient.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
-		} else {
-			return playerBaublesServer.computeIfAbsent(player.getCommandSenderName(), username -> new InventoryBaubles(player));
-		}
+        HashMap<String, InventoryBaubles> inventories = player.worldObj.isRemote ? playerBaublesClient : playerBaublesServer;
+        InventoryBaubles inventory = inventories.computeIfAbsent(player.getCommandSenderName(), name -> new InventoryBaubles(player));
+        if (inventory.player.get() != player) inventory.player = new WeakReference<>(player);
+        return inventory;
 	}
 
 	public static void setPlayerBaubles(EntityPlayer player, InventoryBaubles inventory) {
@@ -101,13 +103,19 @@ public class PlayerHandler {
 	public static void loadPlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
 		if(player != null && !player.worldObj.isRemote) {
 			try {
-				NBTTagCompound data = null;
+				NBTTagCompound data = PlayerBaublesProperties.takeLoadedData(player);
+				if (data != null) {
+                    InventoryBaubles inventory = new InventoryBaubles(player);
+                    inventory.readNBT(data);
+                    playerBaublesServer.put(player.getCommandSenderName(), inventory);
+                    return;
+                }
 				boolean save = false;
 				if(mainFile != null && mainFile.exists()) {
 					try {
-						FileInputStream fileinputstream = new FileInputStream(mainFile);
-						data = CompressedStreamTools.readCompressed(fileinputstream);
-						fileinputstream.close();
+                        try (FileInputStream stream = new FileInputStream(mainFile)) {
+                            data = CompressedStreamTools.readCompressed(stream);
+                        }
 					} catch (Exception loadMainException) {
 						loadMainException.printStackTrace();
 					}
@@ -120,9 +128,9 @@ public class PlayerHandler {
 					);
 					if(backupFile != null && backupFile.exists()) {
 						try {
-							FileInputStream fileinputstream = new FileInputStream(backupFile);
-							data = CompressedStreamTools.readCompressed(fileinputstream);
-							fileinputstream.close();
+                            try (FileInputStream stream = new FileInputStream(backupFile)) {
+                                data = CompressedStreamTools.readCompressed(stream);
+                            }
 							save = true;
 						} catch(Exception loadBackupException) {
 							loadBackupException.printStackTrace();
@@ -135,7 +143,7 @@ public class PlayerHandler {
 					inventory.readNBT(data);
 					playerBaublesServer.put(player.getCommandSenderName(), inventory);
 					if(save) {
-						savePlayerBaubles(player, mainFile, backupFile);
+						savePlayerBaubles(player, mainFile, backupFile, false);
 					}
 				}
 			} catch(Exception loadException) {
@@ -146,41 +154,47 @@ public class PlayerHandler {
 	}
 
 	public static void savePlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
-		if(player != null && !player.worldObj.isRemote) {
-			try {
-				if (mainFile != null && mainFile.exists()) {
-					try {
-						Files.copy(mainFile, backupFile);
-					} catch (Exception saveBackupException) {
-						Baubles.log.error("Could not backup old baubles file for player " + player.getCommandSenderName());
-					}
-				}
-
-				try {
-					if(mainFile != null) {
-						InventoryBaubles inventory = getPlayerBaubles(player);
-						NBTTagCompound data = new NBTTagCompound();
-						inventory.saveNBT(data);
-
-						FileOutputStream fileoutputstream = new FileOutputStream(mainFile);
-						CompressedStreamTools.writeCompressed(data, fileoutputstream);
-						fileoutputstream.close();
-					}
-				} catch(Exception saveMainException) {
-					Baubles.log.error("Could not save baubles file for player " + player.getCommandSenderName());
-					saveMainException.printStackTrace();
-					if (mainFile.exists()) {
-						try {
-							mainFile.delete();
-						} catch (Exception ignored) {
-						}
-					}
-				}
-			} catch(Exception saveException) {
-				Baubles.log.fatal("Error saving baubles inventory");
-				saveException.printStackTrace();
-			}
-		}
+        savePlayerBaubles(player, mainFile, backupFile, true);
 	}
+
+    private static void savePlayerBaubles(EntityPlayer player, File mainFile, File backupFile, boolean backupPrevious) {
+        if (player == null || player.worldObj.isRemote || mainFile == null) return;
+        Path target = mainFile.toPath();
+        Path temporary = target.resolveSibling(mainFile.getName() + ".tmp");
+        try {
+            NBTTagCompound data = new NBTTagCompound();
+            getPlayerBaubles(player).saveNBT(data);
+            try (OutputStream stream = Files.newOutputStream(temporary)) {
+                CompressedStreamTools.writeCompressed(data, stream);
+            }
+            if (backupPrevious && Files.exists(target) && backupFile != null) {
+                Path backup = backupFile.toPath();
+                Path backupTemporary = backup.resolveSibling(backupFile.getName() + ".tmp");
+                try {
+                    Files.copy(target, backupTemporary, StandardCopyOption.REPLACE_EXISTING);
+                    replaceFile(backupTemporary, backup);
+                } finally {
+                    Files.deleteIfExists(backupTemporary);
+                }
+            }
+            replaceFile(temporary, target);
+        } catch (Exception e) {
+            Baubles.log.error("Could not save baubles file for player " + player.getCommandSenderName(), e);
+        } finally {
+            try {
+                Files.deleteIfExists(temporary);
+            } catch (IOException e) {
+                Baubles.log.warn("Could not remove temporary baubles file " + temporary, e);
+            }
+        }
+    }
+
+    private static void replaceFile(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
 
 }
