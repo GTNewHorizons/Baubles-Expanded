@@ -1,8 +1,6 @@
 package baubles.client.gui;
 
-import baubles.api.IBauble;
 import baubles.api.expanded.BaubleExpandedSlots;
-import baubles.api.expanded.IBaubleExpanded;
 import baubles.common.Baubles;
 import baubles.common.BaublesConfig;
 import baubles.common.container.ContainerPlayerExpanded;
@@ -28,6 +26,7 @@ import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
@@ -37,7 +36,9 @@ import org.lwjgl.opengl.GL11;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static net.minecraft.client.gui.inventory.GuiInventory.func_147046_a;
 
@@ -83,6 +84,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
 
     private int tooltipIndexCache = -1;
     private final List<String> tooltipCache = new ArrayList<>(2);
+    private final Map<String, ResourceLocation> slotIcons = new HashMap<>();
 
     public GuiPlayerExpanded(EntityPlayer player) {
         super(new ContainerPlayerExpanded(player.inventory, !player.worldObj.isRemote, player));
@@ -142,6 +144,18 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         if (!useOldGuiRendering) {
             this.fontRendererObj.drawString(I18n.format("container.crafting"), 86, 16, 4210752);
         }
+        ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+        for (int i = 0; i < container.getBaubleSlotCount(); i++) {
+            SlotBauble slot = container.getBaubleSlot(i);
+            if (isVisibleBaubleSlot(slot) && !slot.isSlotActive()) {
+                drawRect(slot.xDisplayPosition, slot.yDisplayPosition, slot.xDisplayPosition + 16, slot.yDisplayPosition + 16, 0x88707070);
+            }
+        }
+    }
+
+    private boolean isVisibleBaubleSlot(SlotBauble slot) {
+        return slot != null && slot.yDisplayPosition != -2000
+                && !BaubleExpandedSlots.unknownType.equals(slot.getSlotType());
     }
 
     @Override
@@ -154,12 +168,24 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
         }
 
         this.drawBaubleSlots();
+        drawCustomSlotIcons();
         if (showActivePotionEffects) {
             drawPotionEffects();
         }
 
         // Player model
         func_147046_a(guiLeft + 51, guiTop + 75, 30, (float) (guiLeft + 51) - xSizeFloat, (float) (guiTop + 25) - ySizeFloat, mc.thePlayer);
+    }
+
+    private void drawCustomSlotIcons() {
+        ContainerPlayerExpanded container = (ContainerPlayerExpanded) inventorySlots;
+        for (int i = 0; i < container.getBaubleSlotCount(); i++) {
+            SlotBauble slot = container.getBaubleSlot(i);
+            String icon = slot.getSlotDefinition().icon();
+            if (!isVisibleBaubleSlot(slot) || slot.getHasStack() || icon.isEmpty()) continue;
+            mc.getTextureManager().bindTexture(slotIcons.computeIfAbsent(icon, ResourceLocation::new));
+            func_146110_a(guiLeft + slot.xDisplayPosition, guiTop + slot.yDisplayPosition, 0, 0, 16, 16, 16, 16);
+        }
     }
 
     private void drawBaubleSlots() {
@@ -353,25 +379,12 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             // Strip formatting codes
             String strippedType = StatCollector.translateToLocal("slot." + slotType).replaceAll("§[0-9a-fklmnor]", "");
             tooltipCache.add(strippedType);
+            if (!slot.isSlotActive()) tooltipCache.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("tooltip.baubles.inactive"));
+
             ItemStack heldItem = mc.thePlayer.inventory.getItemStack();
 
             if (heldItem != null && heldItem.stackSize > 0) {
-                boolean fitsInSlot = false;
-                if (heldItem.getItem() instanceof IBaubleExpanded baubleExpandedItem) {
-                    String[] itemBaubleTypes = baubleExpandedItem.getBaubleTypes(heldItem);
-                    for(String itemBaubleType : itemBaubleTypes) {
-                        if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
-                            fitsInSlot = true;
-                            break;
-                        }
-                    }
-                }
-                else if(heldItem.getItem() instanceof IBauble baubleItem) {
-                    String itemBaubleType = BaubleExpandedSlots.getTypeFromBaubleType(baubleItem.getBaubleType(heldItem));
-                    if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
-                        fitsInSlot = true;
-                    }
-                }
+                boolean fitsInSlot = slot.isItemValid(heldItem);
 
                 tooltipCache.add(fitsInSlot
                     ? StatCollector.translateToLocal("tooltip.fitsInSlot")

@@ -34,3 +34,13 @@ slot.shield=§aShield§7
 slot.universal=§aUniversal§7
 slot.unknown=§aUnknown§7
 slot.wings=§aWings§7
+
+commands.baubles.usage=/baubles list [player] | set/add/remove <slot> <player> [amount] | reset <player> [slot] | reload | activate/deactivate <slot> <player> [index]
+commands.baubles.changed=%s now has %s slots: %s
+commands.baubles.reset=Reset command slot modifiers for %s
+commands.baubles.invalid=Cannot change slots: %s
+commands.baubles.type=Unknown bauble slot type: %s
+commands.baubles.unavailable=Dynamic bauble slots are not available for this player
+tooltip.baubles.inactive=Inactive slot
+commands.baubles.reloaded=Reloaded bauble slot configuration
+commands.baubles.active=Set %s %s slots active: %s
