@@ -75,6 +75,9 @@ public class GuiEvents {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void guiPostDraw(GuiScreenEvent.DrawScreenEvent.Post event) {
         if (event.gui == null) return;
+        if (event.gui instanceof GuiPlayerExpanded inventory) {
+            inventory.drawRenderToggleTooltip(event.mouseX, event.mouseY);
+        }
         for (GuiButton button : GuiScreenReflectionHelper.getButtons(event.gui)) {
             if ((button instanceof GuiBaublesButton) && button.visible && button.func_146115_a()) {
                 GuiScreenReflectionHelper.drawTooltip(event.gui, Collections.singletonList(button.displayString),
