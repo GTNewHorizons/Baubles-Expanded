@@ -24,6 +24,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
     private BaubleSlotState state;
     private ItemStack[] inventory;
     private int[] hiddenSlots;
+    private ItemStack[] cosmetics;
 
     public PacketSyncAllBauble() {}
 
@@ -35,6 +36,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         state = inv.getSlotState();
         oldGui = inv.usesOldGuiRendering();
         hiddenSlots = inv.getHiddenSlots();
+        cosmetics = inv.getCosmeticInventory().copyStacks();
         inventory = new ItemStack[inv.getSizeInventory()];
         for (int i = 0; i < inventory.length; i++) inventory[i] = ItemStack.copyItemStack(inv.getStackInSlot(i));
     }
@@ -49,6 +51,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         ByteBufUtils.writeVarInt(buffer, hiddenSlots.length, 5);
         for (int slot : hiddenSlots) ByteBufUtils.writeVarInt(buffer, slot, 5);
         writeStacks(buffer, inventory);
+        writeStacks(buffer, cosmetics);
     }
 
     private static void writeStacks(ByteBuf buffer, ItemStack[] stacks) {
@@ -79,6 +82,8 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
             previous = slot;
         }
         readStacks(buffer, inventory);
+        cosmetics = new ItemStack[inventory.length];
+        readStacks(buffer, cosmetics);
     }
 
     private static void readStacks(ByteBuf buffer, ItemStack[] stacks) {
@@ -99,7 +104,7 @@ public class PacketSyncAllBauble implements IMessage, IMessageHandler<PacketSync
         Entity entity = world.getEntityByID(message.playerId);
         if (entity instanceof EntityPlayer player) {
             PlayerHandler.getPlayerBaubles(player).applySnapshot(
-                    message.state, message.revision, message.inventory, message.oldGui, message.hiddenSlots);
+                    message.state, message.revision, message.inventory, message.oldGui, message.hiddenSlots, message.cosmetics);
         }
         return null;
     }

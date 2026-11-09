@@ -41,6 +41,7 @@ public class SlotBauble extends Slot {
     }
 
     public InventoryBaubles getBaublesInventory() {
+        if (inventory instanceof InventoryBaubleCosmetics cosmetics) return cosmetics.getOwner();
         return inventory instanceof InventoryBaubles baubles ? baubles : null;
     }
 
@@ -51,7 +52,7 @@ public class SlotBauble extends Slot {
     }
 
     public boolean isCosmeticSlot() {
-        return false;
+        return inventory instanceof InventoryBaubleCosmetics;
     }
 
     public boolean isSlotActive() {

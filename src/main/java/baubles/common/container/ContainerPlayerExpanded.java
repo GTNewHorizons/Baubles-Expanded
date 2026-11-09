@@ -36,6 +36,7 @@ public class ContainerPlayerExpanded extends Container {
     private final EntityPlayer thePlayer;
     private final boolean useOldGuiRendering;
     private final long layoutRevision;
+    private final boolean cosmeticView;
     private final List<SlotBauble> visibleBaubleSlots = new ArrayList<>();
 
     private int slotsAdded = 0;
@@ -44,8 +45,13 @@ public class ContainerPlayerExpanded extends Container {
     private int baubleSlotCount = 0;
 
     public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean isClient, EntityPlayer player) {
+        this(playerInv, isClient, player, false);
+    }
+
+    public ContainerPlayerExpanded(InventoryPlayer playerInv, boolean isClient, EntityPlayer player, boolean cosmeticView) {
         this.thePlayer = player;
         baubles = PlayerHandler.getPlayerBaubles(player);
+        this.cosmeticView = cosmeticView && baubles.hasCosmeticSlots();
         useOldGuiRendering = baubles.usesOldGuiRendering();
         layoutRevision = baubles.getLayoutRevision();
         baubles.setEventHandler(this);
@@ -101,7 +107,9 @@ public class ContainerPlayerExpanded extends Container {
             boolean visible = isTypeVisible(type);
             int x = useOldGuiRendering ? slotStartX + slotOffset * (visibleIndex / 4) : -18 - 18 * (visibleIndex % getColumns());
             int y = useOldGuiRendering ? slotStartY + slotOffset * (visibleIndex % 4) : 12 + slotOffset * (visibleIndex / getColumns());
-            SlotBauble slot = new SlotBauble(baubles, type, index, x, y);
+            SlotBauble slot = this.cosmeticView && baubles.getSlotDefinition(type).cosmetic()
+                    ? new SlotBaubleCosmetic(baubles.getCosmeticInventory(), type, index, x, y)
+                    : new SlotBauble(baubles, type, index, x, y);
             addSlotToContainer(slot);
             if (visible) {
                 visibleBaubleSlots.add(slot);
@@ -181,6 +189,10 @@ public class ContainerPlayerExpanded extends Container {
 
     public boolean usesOldGuiRendering() {
         return useOldGuiRendering;
+    }
+
+    public boolean isCosmeticView() {
+        return cosmeticView;
     }
 
     private boolean isTypeVisible(String type) {
@@ -285,13 +297,13 @@ public class ContainerPlayerExpanded extends Container {
             ItemStack removed = slot.decrStackSize(originalStack.stackSize - remaining.stackSize);
             slot.onPickupFromSlot(player, removed);
             return returnStack;
-        } else if (item instanceof ItemArmor armor
+        } else if (!cosmeticView && item instanceof ItemArmor armor
                 && !((Slot) inventorySlots.get(craftingActive + armor.armorType)).getHasStack()) {
             int armorSlot = craftingActive + armor.armorType;
             if (!mergeItemStack(originalStack, armorSlot, armorSlot + 1, false)) {
                 returnStack = null;
             }
-        } else if (item instanceof IBauble bauble && bauble.canEquip(returnStack, thePlayer)) {
+        } else if (item instanceof IBauble bauble && (cosmeticView || bauble.canEquip(returnStack, thePlayer))) {
             String[] types = item instanceof IBaubleExpanded
                 ? ((IBaubleExpanded) item).getBaubleTypes(returnStack)
                 : new String[] {BaubleExpandedSlots.getTypeFromBaubleType(bauble.getBaubleType(returnStack))};
