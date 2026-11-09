@@ -1,6 +1,7 @@
 
 package baubles.client;
 
+import baubles.client.event.EventHandlerItemTooltip;
 import baubles.client.gui.GuiEvents;
 import baubles.client.gui.GuiPlayerExpanded;
 import baubles.common.Baubles;
@@ -23,6 +24,7 @@ public class ClientProxy extends CommonProxy {
 		keyHandler = new KeyHandler();
 		FMLCommonHandler.instance().bus().register(keyHandler);
 		MinecraftForge.EVENT_BUS.register(new GuiEvents());
+		MinecraftForge.EVENT_BUS.register(new EventHandlerItemTooltip());
 	}
 	
 	@Override
