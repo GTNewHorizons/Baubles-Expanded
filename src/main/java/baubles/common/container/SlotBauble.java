@@ -89,7 +89,15 @@ public class SlotBauble extends Slot {
 	@Override
 	public boolean canTakeStack(EntityPlayer player) {
 		ItemStack itemStack = getStack();
-		return itemStack != null && ((IBauble)itemStack.getItem()).canUnequip(itemStack, player);
+        if (itemStack == null) {
+            return false;
+        } else if (itemStack.getItem() instanceof IBauble bauble) {
+            return bauble.canUnequip(itemStack, player);
+        } else {
+            // Consider the rare case of an item that used to be a Bauble, but has this property later removed (no
+            // longer implements IBauble). The player should still be able to take it out of the slot.
+            return true;
+        }
 	}
 
 	@Override

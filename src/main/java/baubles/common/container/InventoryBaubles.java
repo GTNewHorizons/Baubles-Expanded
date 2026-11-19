@@ -27,7 +27,7 @@ public class InventoryBaubles implements IInventory {
     public ItemStack[] stackList;
     private Container eventHandler;
     public WeakReference<EntityPlayer> player;
-    public boolean blockEvents=false;
+    public boolean blockEvents = false;
 
     public InventoryBaubles(EntityPlayer player) {
         stackList = new ItemStack[BaubleExpandedSlots.slotsCurrentlyUsed()];
@@ -133,16 +133,16 @@ public class InventoryBaubles implements IInventory {
      */
     @Override
     public void setInventorySlotContents(int slot, ItemStack stack) {
-        if(!blockEvents && stackList[slot] != null) {
-            ((IBauble)stackList[slot].getItem()).onUnequipped(stackList[slot], player.get());
+        if (!blockEvents && stackList[slot] != null && stackList[slot].getItem() instanceof IBauble bauble) {
+            bauble.onUnequipped(stackList[slot], player.get());
         }
         stackList[slot] = stack;
-        if(!blockEvents && stack != null && stack.getItem() instanceof IBauble) {
-            if(player.get()!=null) {
-                ((IBauble) stack.getItem()).onEquipped(stack, player.get());
+        if (!blockEvents && stack != null && stack.getItem() instanceof IBauble bauble) {
+            if (player.get() != null) {
+                bauble.onEquipped(stack, player.get());
             }
         }
-        if(eventHandler != null) {
+        if (eventHandler != null) {
             eventHandler.onCraftMatrixChanged(this);
         }
         syncSlotToClients(slot);
