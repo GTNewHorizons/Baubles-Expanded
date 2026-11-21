@@ -300,7 +300,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
             String potionName = I18n.format(potion.getName());
 
             if (effect.getAmplifier() >= 1) {
-                potionName = potionName + " " + I18n.format("enchantment.level." + effect.getAmplifier());
+                potionName = potionName + " " + I18n.format("enchantment.level." + (effect.getAmplifier() + 1));
             }
             this.fontRendererObj.drawStringWithShadow(potionName, positionHorizontal + 10 + 18, positionVertical + 6, 16777215);
             String s = Potion.getDurationString(effect);
