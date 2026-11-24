@@ -5,8 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.io.Files;
 
@@ -26,7 +26,7 @@ public class PlayerHandler {
 	private static final HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
 
 	/// Players whose bauble file failed to migrate through Postea. Neither their main nor their backup file is written.
-	private static final Set<String> failedMigrations = new HashSet<>();
+	private static final Set<String> failedMigrations = ConcurrentHashMap.newKeySet();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
         clearPlayerBaubles(player.getCommandSenderName(), player.worldObj.isRemote);
