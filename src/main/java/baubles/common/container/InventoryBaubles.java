@@ -28,6 +28,8 @@ public class InventoryBaubles implements IInventory {
     private Container eventHandler;
     public WeakReference<EntityPlayer> player;
     public boolean blockEvents=false;
+    /// Postea stamps of the file this inventory was read from, carried into the next save. Null when there are none.
+    public NBTTagCompound savedStamps;
 
     public InventoryBaubles(EntityPlayer player) {
         stackList = new ItemStack[BaubleExpandedSlots.slotsCurrentlyUsed()];

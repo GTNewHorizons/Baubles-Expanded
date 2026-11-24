@@ -23,9 +23,16 @@ public final class PosteaCompat {
         if (POSTEA) Impl.transform(storageId, root);
     }
 
-    /// Stamps a freshly built root about to be written to disk.
-    public static void stamp(NBTTagCompound root) {
-        if (POSTEA) Impl.stamp(root);
+    /// Stamps a freshly built root about to be written to disk, keeping the stamps in `carried` (from [#savedStamps])
+    /// for transformers not registered now. `carried` may be null.
+    public static void stamp(NBTTagCompound root, NBTTagCompound carried) {
+        if (POSTEA) Impl.stamp(root, carried);
+    }
+
+    /// A copy of the stamps on a root read from disk, or null when it carries none or Postea is absent. Call after
+    /// [#transform].
+    public static NBTTagCompound savedStamps(NBTTagCompound root) {
+        return POSTEA ? Impl.savedStamps(root) : null;
     }
 
     private static final class Impl {
@@ -34,8 +41,12 @@ public final class PosteaCompat {
             CustomDataReplacementManager.transform(storageId, root);
         }
 
-        static void stamp(NBTTagCompound root) {
-            CustomDataReplacementManager.stamp(root);
+        static void stamp(NBTTagCompound root, NBTTagCompound carried) {
+            CustomDataReplacementManager.stamp(root, carried);
+        }
+
+        static NBTTagCompound savedStamps(NBTTagCompound root) {
+            return CustomDataReplacementManager.savedStamps(root);
         }
     }
 }
