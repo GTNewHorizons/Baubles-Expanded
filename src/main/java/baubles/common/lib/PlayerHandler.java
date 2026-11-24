@@ -12,6 +12,7 @@ import com.google.common.io.Files;
 
 import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
+import net.minecraft.crash.CrashReport;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
@@ -139,7 +140,7 @@ public class PlayerHandler {
 				}
 
 				if(data != null) {
-					PosteaCompat.transform("baubles:" + player.getCommandSenderName(), data);
+					migrate(player.getCommandSenderName(), data);
 					InventoryBaubles inventory = new InventoryBaubles(player);
 					inventory.readNBT(data);
 					inventory.savedStamps = PosteaCompat.savedStamps(data);
@@ -155,6 +156,17 @@ public class PlayerHandler {
 				Baubles.log.fatal("Error loading baubles inventory");
 				loadException.printStackTrace();
 			}
+		}
+	}
+
+	/// Runs a player's bauble root through Postea, turning any failure into a [ReportedException].
+	private static void migrate(String playerName, NBTTagCompound data) {
+		try {
+			PosteaCompat.transform("baubles:" + playerName, data);
+		} catch (ReportedException migrationException) {
+			throw migrationException;
+		} catch (RuntimeException migrationException) {
+			throw new ReportedException(CrashReport.makeCrashReport(migrationException, "Migrating baubles of " + playerName));
 		}
 	}
 
