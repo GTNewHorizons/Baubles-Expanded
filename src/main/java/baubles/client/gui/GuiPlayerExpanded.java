@@ -355,10 +355,12 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
                 boolean fitsInSlot = false;
                 if (heldItem.getItem() instanceof IBaubleExpanded baubleExpandedItem) {
                     String[] itemBaubleTypes = baubleExpandedItem.getBaubleTypes(heldItem);
-                    for(String itemBaubleType : itemBaubleTypes) {
-                        if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
-                            fitsInSlot = true;
-                            break;
+                    if (itemBaubleTypes != null) {
+                        for(String itemBaubleType : itemBaubleTypes) {
+                            if (BaublesConfig.canTypeFitSlot(itemBaubleType, slotType)) {
+                                fitsInSlot = true;
+                                break;
+                            }
                         }
                     }
                 }
