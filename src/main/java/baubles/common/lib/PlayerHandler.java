@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.io.Files;
 
@@ -14,12 +16,16 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ReportedException;
 import net.minecraft.world.World;
 
 public class PlayerHandler {
 
 	private static final HashMap<String, InventoryBaubles> playerBaublesServer = new HashMap<>();
 	private static final HashMap<String, InventoryBaubles> playerBaublesClient = new HashMap<>();
+
+	/// Players whose bauble file failed to migrate through Postea. Neither their main nor their backup file is written.
+	private static final Set<String> failedMigrations = new HashSet<>();
 
 	public static void clearPlayerBaubles(EntityPlayer player) {
         clearPlayerBaubles(player.getCommandSenderName(), player.worldObj.isRemote);
@@ -71,6 +77,7 @@ public class PlayerHandler {
 
     public static void clearServerPlayerBaubles() {
         playerBaublesServer.clear();
+        failedMigrations.clear();
     }
 
     public static void onWorldUnload(World world) {
@@ -100,6 +107,7 @@ public class PlayerHandler {
 
 	public static void loadPlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
 		if(player != null && !player.worldObj.isRemote) {
+			failedMigrations.remove(player.getCommandSenderName());
 			try {
 				NBTTagCompound data = null;
 				boolean save = false;
@@ -139,6 +147,9 @@ public class PlayerHandler {
 						savePlayerBaubles(player, mainFile, backupFile);
 					}
 				}
+			} catch(ReportedException migrationException) {
+				failedMigrations.add(player.getCommandSenderName());
+				throw migrationException;
 			} catch(Exception loadException) {
 				Baubles.log.fatal("Error loading baubles inventory");
 				loadException.printStackTrace();
@@ -147,7 +158,7 @@ public class PlayerHandler {
 	}
 
 	public static void savePlayerBaubles(EntityPlayer player, File mainFile, File backupFile) {
-		if(player != null && !player.worldObj.isRemote) {
+		if(player != null && !player.worldObj.isRemote && !failedMigrations.contains(player.getCommandSenderName())) {
 			try {
 				if (mainFile != null && mainFile.exists()) {
 					try {
