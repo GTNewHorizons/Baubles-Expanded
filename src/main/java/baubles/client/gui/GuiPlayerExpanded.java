@@ -90,6 +90,7 @@ public class GuiPlayerExpanded extends GuiContainer implements INEIGuiHandler {
      */
     @Override
     public void updateScreen() {
+        super.updateScreen();
     	try {
 			((ContainerPlayerExpanded) inventorySlots).baubles.blockEvents = false;
 		} catch (Exception ignored) {}
