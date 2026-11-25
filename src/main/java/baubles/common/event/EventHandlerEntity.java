@@ -5,20 +5,29 @@ import java.io.IOException;
 
 import com.google.common.io.Files;
 
-import baubles.api.IBauble;
 import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
 import baubles.common.lib.PlayerHandler;
+import baubles.common.lib.PlayerBaublesProperties;
 import baubles.common.network.PacketHandler;
 import baubles.common.network.PacketSyncAllBauble;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
+import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 public class EventHandlerEntity {
+
+    @SubscribeEvent
+    public void entityConstructing(EntityEvent.EntityConstructing event) {
+        if (event.entity instanceof EntityPlayer player
+                && player.getExtendedProperties(PlayerBaublesProperties.IDENTIFIER) == null) {
+            player.registerExtendedProperties(PlayerBaublesProperties.IDENTIFIER, new PlayerBaublesProperties());
+        }
+    }
 
 	// player directory
 	private File playerDirectory;
@@ -29,13 +38,7 @@ public class EventHandlerEntity {
 		// player events
 		if (event.entity instanceof EntityPlayer player) {
 			InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
-			for (int a = 0; a < baubles.getSizeInventory(); a++) {
-				if (baubles.getStackInSlot(a) != null
-						&& baubles.getStackInSlot(a).getItem() instanceof IBauble) {
-					((IBauble) baubles.getStackInSlot(a).getItem()).onWornTick(
-							baubles.getStackInSlot(a), player);
-				}
-			}
+			baubles.tick();
 
 		}
 

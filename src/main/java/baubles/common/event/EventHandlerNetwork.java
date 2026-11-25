@@ -1,6 +1,7 @@
 package baubles.common.event;
 
 import baubles.api.IBauble;
+import baubles.common.Baubles;
 import baubles.common.container.InventoryBaubles;
 import baubles.common.lib.PlayerHandler;
 import baubles.common.network.PacketHandler;
@@ -12,7 +13,6 @@ import cpw.mods.fml.common.network.FMLNetworkEvent;
 import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import baubles.common.network.PacketSyncBauble;
 import net.minecraft.item.ItemStack;
 
 public class EventHandlerNetwork {
@@ -23,6 +23,7 @@ public class EventHandlerNetwork {
 		if (side == Side.SERVER) {
 			// Apply all baubles
             InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(event.player);
+            baubles.returnOverflowItems();
             PacketHandler.INSTANCE.sendTo(new PacketSyncAllBauble(event.player), ((EntityPlayerMP) event.player));
 			for (int i = 0; i < baubles.getSizeInventory(); i++) {
 				ItemStack stack = baubles.getStackInSlot(i);
@@ -47,10 +48,28 @@ public class EventHandlerNetwork {
         PlayerHandler.clearClientPlayerBaubles();
     }
 
+    @SubscribeEvent
+    public void playerRespawned(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.player instanceof EntityPlayerMP playerMP) {
+            InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(playerMP);
+            baubles.returnOverflowItems();
+            for (int slot = 0; slot < baubles.getSizeInventory(); slot++) {
+                ItemStack stack = baubles.getStackInSlot(slot);
+                if (stack != null && stack.getItem() instanceof IBauble item) {
+                    try {
+                        item.onPlayerLoad(stack, playerMP);
+                    } catch (Exception e) {
+                        Baubles.log.error("Error restoring bauble after respawn {}", stack, e);
+                    }
+                }
+            }
+            PacketHandler.sendToTracking(new PacketSyncAllBauble(playerMP), playerMP, true);
+        }
+    }
+
 	public static void syncBaubles(EntityPlayer player) {
-        InventoryBaubles baubles = PlayerHandler.getPlayerBaubles(player);
-        for (int i = 0; i < baubles.getSizeInventory(); i++) {
-            baubles.syncSlotToClients(i);
+        if (player instanceof EntityPlayerMP && !player.worldObj.isRemote) {
+            PacketHandler.sendToTracking(new PacketSyncAllBauble(player), player, true);
         }
     }
 

@@ -49,6 +49,7 @@ public class BaubleItemHelper {
      * @return The item stack.
      */
     public static ItemStack onBaubleRightClick(ItemStack itemStackIn, World worldIn, EntityPlayer player) {
+        if (itemStackIn == null || itemStackIn.stackSize <= 0) return itemStackIn;
         IInventory baubles = BaublesApi.getBaubles(player);
         if(baubles == null) {
             return itemStackIn;
@@ -56,13 +57,16 @@ public class BaubleItemHelper {
         for(int slotIndex = 0; slotIndex < baubles.getSizeInventory(); slotIndex++) {
             if(baubles.getStackInSlot(slotIndex) == null && baubles.isItemValidForSlot(slotIndex, itemStackIn)) {
                 if(!worldIn.isRemote) {
-                    baubles.setInventorySlotContents(slotIndex, itemStackIn.copy());
-                    if(!player.capabilities.isCreativeMode) {
-                        itemStackIn.stackSize = 0;
-                        //Work around the event being fired twice in single player before the return stack is set.
-                        player.inventory.setInventorySlotContents(player.inventory.currentItem, itemStackIn);
+                    ItemStack equipped = itemStackIn.copy();
+                    equipped.stackSize = 1;
+                    if (!player.capabilities.isCreativeMode) {
+                        itemStackIn.stackSize--;
                     }
-                    ((IBaubleExpanded)itemStackIn.getItem()).onEquipped(itemStackIn, player);
+                    baubles.setInventorySlotContents(slotIndex, equipped);
+                    if (!player.capabilities.isCreativeMode && itemStackIn.stackSize <= 0
+                            && player.inventory.getCurrentItem() == itemStackIn) {
+                        player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+                    }
                     return itemStackIn;
                 }
             }
